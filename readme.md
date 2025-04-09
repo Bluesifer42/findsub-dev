@@ -115,3 +115,42 @@ FindSub is a private, role-based BDSM platform designed for the Switch, Sub, and
 ```bash
 git clone https://github.com/Bluesifer42/findsub-dev.git
 cd findsub-dev
+
+2. Install dependencies:
+cd findsub-client
+npm install
+
+cd ../findsub-server
+npm install
+
+
+3. Create .env inside findsub-server/:
+MONGO_URI=mongodb+srv://<your Mongo string>
+
+
+4. Run:
+
+Frontend (React):
+cd findsub-client
+npm run dev
+Backend (API):
+cd findsub-server
+node server.js
+
+
+🔮 Coming Soon
+Membership system with Stripe (Basic, Pro, Elite)
+
+Template jobs for rapid reposting
+
+Verified certification upload
+
+Media galleries per user
+
+Job filtering, search, and calendar view
+
+End-to-end messaging and document exchange
+
+Maintained by bluesifer42
+
+🖤 BDSM is about trust, respect, and communication. This platform reflects those values in code.
