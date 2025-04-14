@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import FeedbackForm from './FeedbackForm';
 
 function JobManager() {
   const [user, setUser] = useState(null);
@@ -7,6 +8,7 @@ function JobManager() {
   const [applications, setApplications] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedJobData, setSelectedJobData] = useState(null);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,11 +35,12 @@ function JobManager() {
 
     const jobInfo = jobs.find(j => j._id === jobId);
     setSelectedJobData(jobInfo);
+    setShowFeedbackForm(false);
   };
 
   const selectApplicant = async (applicantId) => {
-    const confirm = window.confirm('Are you sure you want to select this applicant? This will close the job.');
-    if (!confirm) return;
+    const confirmSelection = window.confirm('Are you sure you want to select this applicant? This will close the job.');
+    if (!confirmSelection) return;
 
     const res = await fetch('http://localhost:5000/api/jobs/select', {
       method: 'POST',
@@ -50,33 +53,9 @@ function JobManager() {
     window.location.reload();
   };
 
-  const leaveFeedback = async () => {
-    if (!selectedJobData?.selectedApplicant) return alert('No applicant selected yet.');
-
-    const rating = prompt('Rate the selected user (1 to 5):');
-    if (!rating || rating < 1 || rating > 5) return alert('Invalid rating.');
-
-    const comment = prompt('Leave a comment (optional):');
-
-    const res = await fetch('http://localhost:5000/api/feedback/poster', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jobId: selectedJob,
-        fromUser: user.id,
-        toUser: selectedJobData.selectedApplicant,
-        rating,
-        comment
-      })
-    });
-
-    const data = await res.json();
-    alert(data.message);
-  };
-
   const updateJobStatus = async (newStatus) => {
-    const confirm = window.confirm(`Are you sure you want to mark this job as ${newStatus}?`);
-    if (!confirm) return;
+    const confirmStatus = window.confirm(`Are you sure you want to mark this job as ${newStatus}?`);
+    if (!confirmStatus) return;
 
     const res = await fetch('http://localhost:5000/api/jobs/status', {
       method: 'POST',
@@ -90,21 +69,19 @@ function JobManager() {
   };
 
   const deleteJob = async (jobId) => {
-    const confirm = window.confirm('Are you sure you want to permanently delete this job?');
-    if (!confirm) return;
+    const confirmDelete = window.confirm('Are you sure you want to permanently delete this job?');
+    if (!confirmDelete) return;
 
-    const res = await fetch(`http://localhost:5000/api/jobs/delete/${jobId}`, {
-      method: 'DELETE'
-    });
-
+    const res = await fetch(`http://localhost:5000/api/jobs/delete/${jobId}`, { method: 'DELETE' });
     const data = await res.json();
     alert(data.message);
     window.location.reload();
   };
 
-  if (!user || (user.role !== 'Dom' && user.role !== 'Switch')) {
-    return <p>Access denied. Only Doms and Switches can manage jobs.</p>;
-  }
+  const handleFeedbackClick = () => {
+    if (!selectedJobData?.selectedApplicant) return alert('No applicant selected yet.');
+    setShowFeedbackForm(true);
+  };
 
   return (
     <div>
@@ -118,21 +95,17 @@ function JobManager() {
           <p>{job.description}</p>
           <p><strong>Status:</strong> {job.status}</p>
           <p><strong>Category:</strong> {job.category}</p>
-          <p><strong>Start:</strong> {new Date(job.startDate).toLocaleDateString()} at {job.startTime || '—'}</p>
+          <p>
+            <strong>Start:</strong> {new Date(job.startDate).toLocaleDateString()} at {job.startTime || '—'}
+          </p>
           <p><strong>Min Duration:</strong> {job.minDuration || 'Not set'}</p>
 
           {job.status === 'cancelled' && (
             <>
               <p style={{ color: 'red' }}>🚫 This job was cancelled.</p>
               <button onClick={() => deleteJob(job._id)}>Delete</button>
-              <button onClick={() => navigate(`/jobs/edit/${job._id}`)}>✏️ Edit & Re-List</button>
+              <button onClick={() => navigate(`/jobs/edit/${job._id}`)}>✏️ Edit &amp; Re-List</button>
             </>
-          )}
-
-          {job.isFilled ? (
-            <p style={{ color: 'green' }}>✅ Job is filled.</p>
-          ) : (
-            <p style={{ color: 'orange' }}>🕓 Job is open.</p>
           )}
 
           {job.status === 'open' && (
@@ -151,7 +124,9 @@ function JobManager() {
           ) : (
             applications.map((app) => (
               <div key={app._id} style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid #ddd' }}>
-                <p><strong>Username:</strong> <Link to={`/profile/${app.applicantId._id}`}>{app.applicantId.username}</Link></p>
+                <p>
+                  <strong>Username:</strong> <Link to={`/profile/${app.applicantId._id}`}>{app.applicantId.username}</Link>
+                </p>
                 <p><strong>Role:</strong> {app.applicantId.role}</p>
                 <p><strong>Experience:</strong> {app.applicantId.experienceLevel}</p>
                 <p><strong>Message:</strong> {app.coverLetter || '(no message)'}</p>
@@ -168,7 +143,18 @@ function JobManager() {
               <p style={{ color: 'green', marginTop: '1rem' }}>
                 ✅ This job has been filled.
               </p>
-              <button onClick={leaveFeedback}>Leave Feedback for Selected Sub</button>
+              {!showFeedbackForm && (
+                <button onClick={handleFeedbackClick}>Leave Feedback for Selected Sub</button>
+              )}
+              {showFeedbackForm && (
+                <FeedbackForm 
+                  jobId={selectedJob}
+                  fromUser={user.id}
+                  toUser={selectedJobData.selectedApplicant}
+                  role={user.role}
+                  targetInterests={selectedJobData.selectedApplicant?.interests || []}
+                />
+              )}
               <button onClick={() => updateJobStatus('completed')}>✅ Mark as Completed</button>
               <button onClick={() => updateJobStatus('failed')}>❌ Mark as Failed</button>
             </>

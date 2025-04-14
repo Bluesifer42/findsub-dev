@@ -15,31 +15,33 @@ import MyJobs from './pages/MyJobs';
 import PublicProfile from './pages/PublicProfile';
 import UserDirectory from './pages/UserDirectory';
 import JobsHub from './pages/JobsHub';
-
+import JobDetail from './pages/JobDetail';  // NEW: Import JobDetail page
 
 function App() {
   return (
     <Router>
       <div className="app-container">
-      <header className="header">
-  <h1 style={{ flex: 1 }}>FindSub</h1>
-  <div className="user-info">
-    {localStorage.getItem('user') ? (
-      <>
-        <span>{JSON.parse(localStorage.getItem('user')).username}</span>
-        <button className="logout-btn" onClick={() => {
-          localStorage.removeItem('user');
-          window.location.href = '/login';
-        }}>
-          Logout
-        </button>
-      </>
-    ) : (
-      <span>Not logged in</span>
-    )}
-  </div>
-</header>
-
+        <header className="header">
+          <h1 style={{ flex: 1 }}>FindSub</h1>
+          <div className="user-info">
+            {localStorage.getItem('user') ? (
+              <>
+                <span>{JSON.parse(localStorage.getItem('user')).username}</span>
+                <button
+                  className="logout-btn"
+                  onClick={() => {
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                  }}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <span>Not logged in</span>
+            )}
+          </div>
+        </header>
 
         <main className="main-content">
           <Routes>
@@ -56,6 +58,8 @@ function App() {
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/users" element={<UserDirectory />} />
             <Route path="/jobs/edit/:jobId" element={<JobPost />} />
+            <Route path="/job/:jobId" element={<JobDetail />} /> {/* NEW: Job Detail Route */}
+            {/* You can also add routes for JobManager and MyJobs if needed */}
           </Routes>
         </main>
 
@@ -63,15 +67,15 @@ function App() {
           <button className="collapse-btn">☰</button>
           <nav>
             <ul>
-            <li>
-              <Link to={
-                localStorage.getItem('user')
-                  ? `/dashboard/${JSON.parse(localStorage.getItem('user')).role.toLowerCase()}`
-                  : '/login'
-              }>
-                Dashboard
-              </Link>
-             </li>
+              <li>
+                <Link to={
+                  localStorage.getItem('user')
+                    ? `/dashboard/${JSON.parse(localStorage.getItem('user')).role.toLowerCase()}`
+                    : '/login'
+                }>
+                  Dashboard
+                </Link>
+              </li>
               <li><Link to="/Register">Register</Link></li>
               <li><Link to="/Jobs">Job Offers</Link></li>
               <li><Link to="/Messages">Messages</Link></li>

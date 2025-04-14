@@ -25,34 +25,6 @@ function Jobs() {
       });
   }, []);
 
-  const handleApply = async (jobId) => {
-    if (!user) return alert('Please log in to apply.');
-    const coverLetter = prompt('Optional: Add a cover letter or comment (or leave blank)') || '';
-
-    try {
-      const res = await fetch('http://localhost:5000/api/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobId,
-          applicantId: user.id,
-          coverLetter
-        })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert('✅ Application submitted successfully!');
-      } else {
-        alert(`❌ ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Application error:', error);
-      alert('❌ Failed to submit application.');
-    }
-  };
-
   const toggleFeedback = async (jobId) => {
     const isVisible = visibleFeedbackJobIds.includes(jobId);
 
@@ -76,7 +48,7 @@ function Jobs() {
 
       {jobs.map((job) => (
         <div key={job._id} style={{ border: '1px solid #ccc', marginBottom: '1rem', padding: '1rem' }}>
-          <h3>{job.title}</h3>
+          <h3><Link to={`/job/${job._id}`}>{job.title}</Link></h3>
           <p><strong>Posted by:</strong> <Link to={`/profile/${job.posterId._id}`}>{job.posterId.username}</Link></p>
           <p><strong>Description:</strong> {job.description}</p>
           <p><strong>Location:</strong> {job.location}</p>
@@ -97,13 +69,7 @@ function Jobs() {
               </button>
 
               {visibleFeedbackJobIds.includes(job._id) && feedbackMap[job._id] && (
-                <div style={{
-                  marginTop: '0.5rem',
-                  background: '#222',
-                  padding: '1rem',
-                  borderRadius: '6px',
-                  color: '#eee'
-                }}>
+                <div style={{ marginTop: '0.5rem', background: '#222', padding: '1rem', borderRadius: '6px', color: '#eee' }}>
                   <h4>Feedback:</h4>
                   {feedbackMap[job._id].length === 0 ? (
                     <p>No feedback submitted yet.</p>
@@ -111,8 +77,38 @@ function Jobs() {
                     feedbackMap[job._id].map(f => (
                       <div key={f._id} style={{ borderBottom: '1px solid #444', padding: '0.5rem 0' }}>
                         <p><strong>From:</strong> {f.fromUser.username} ({f.fromUser.role})</p>
-                        <p>⭐ {f.rating} / 5</p>
-                        {f.comment && <p>{f.comment}</p>}
+                        {f.generalRatings && (
+                          <>
+                            <p><strong>General Ratings:</strong></p>
+                            <ul>
+                              {Object.entries(f.generalRatings).map(([key, value]) => (
+                                <li key={key}>{key}: {value} / 5</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                        {f.interestRatings && (
+                          <>
+                            <p><strong>Interest Ratings:</strong></p>
+                            <ul>
+                              {Array.from(Object.entries(f.interestRatings)).map(([key, value]) => (
+                                <li key={key}>{key}: {value !== null ? `${value} / 5` : 'N/A'}</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                        {f.badgeGifting && (
+                          <>
+                            <p><strong>Badges Gifted:</strong></p>
+                            <ul>
+                              {Array.from(Object.entries(f.badgeGifting)).map(([key, value]) => (
+                                <li key={key}>{key}: {value}</li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                        <p><strong>Honesty Score:</strong> {f.honestyScore} / 5</p>
+                        {f.comment && <p><strong>Comment:</strong> {f.comment}</p>}
                       </div>
                     ))
                   )}

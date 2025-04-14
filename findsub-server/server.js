@@ -10,13 +10,21 @@ const User = require('./models/User');
 const Job = require('./models/Job');
 const Application = require('./models/Application');
 const Feedback = require('./models/Feedback');
+const Kink = require('./models/Kink');
 
-// User Reputation
+// User Reputation: Update reputation (basic average rating)
 async function updateUserReputation(userId) {
   const feedback = await Feedback.find({ toUser: userId });
   if (feedback.length === 0) return;
 
-  const ratings = feedback.map(f => f.rating);
+  const ratings = feedback.map(f => {
+    // Use general average if available, otherwise fallback to overall rating
+    if (f.generalRatings) {
+      const values = Object.values(f.generalRatings);
+      return values.reduce((a, b) => a + b, 0) / values.length;
+    }
+    return f.rating;
+  });
   const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
 
   await User.findByIdAndUpdate(userId, {
@@ -242,12 +250,26 @@ app.get('/api/jobs', async (req, res) => {
   }
 });
 
-// Feedback for Job
+// Get a Single Job Detail  <-- NEW ENDPOINT
+app.get('/api/job/:jobId', async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId)
+      .populate('posterId', 'username kinks')  
+      .populate('selectedApplicant', 'username kinks')
+      .populate('requiredKinks', 'name'); // Populate requiredKinks with the name field.
+    if (!job) return res.status(404).json({ message: 'Job not found.' });
+    res.json({ job });
+  } catch (error) {
+    console.error('Job detail fetch error:', error);
+    res.status(500).json({ message: 'Failed to load job details.' });
+  }
+});
+
+// Get Feedback for a Job
 app.get('/api/feedback/job/:jobId', async (req, res) => {
   try {
     const feedback = await Feedback.find({ jobId: req.params.jobId })
       .populate('fromUser', 'username role');
-
     res.json({ feedback });
   } catch (error) {
     console.error('Feedback fetch error:', error);
@@ -266,7 +288,58 @@ app.get('/api/my-jobs/:userId', async (req, res) => {
   }
 });
 
-// Submit Feedback
+// New Feedback Endpoint
+app.post('/api/feedback/new', async (req, res) => {
+  try {
+    const {
+      jobId,
+      fromUser,
+      toUser,
+      generalRatings,
+      interestRatings,  // e.g., { "Domestic Cleaning": 4, "Boot Licking": 5 }
+      badgeGifting,     // e.g., { "Domestic Cleaning": 2, "Boot Licking": 1 }
+      honestyScore,
+      comment
+    } = req.body;
+
+    // Check if feedback from this user for the job already exists
+    const existing = await Feedback.findOne({ jobId, fromUser });
+    if (existing) {
+      return res.status(400).json({ message: 'Feedback already submitted for this job.' });
+    }
+
+    // Create and save the new feedback document
+    const feedback = new Feedback({
+      jobId,
+      fromUser,
+      toUser,
+      generalRatings,
+      interestRatings,
+      badgeGifting,
+      honestyScore,
+      comment
+    });
+
+    await feedback.save();
+
+    // Update reputation (average rating) for the recipient
+    await updateUserReputation(toUser);
+
+    // Recalculate trust score using the model method from User
+    const recipient = await User.findById(toUser);
+    if (recipient && typeof recipient.recalculateTrustScore === 'function') {
+      recipient.recalculateTrustScore();
+      await recipient.save();
+    }
+
+    res.status(201).json({ message: 'Feedback submitted successfully.' });
+  } catch (err) {
+    console.error('Feedback new endpoint error:', err);
+    res.status(500).json({ message: 'Failed to submit feedback.' });
+  }
+});
+
+// Legacy feedback endpoints (optional - can be removed later)
 app.post('/api/feedback', async (req, res) => {
   try {
     const { jobId, fromUser, toUser, rating, comment } = req.body;
@@ -429,6 +502,36 @@ app.get('/api/feedback/user/:userId', async (req, res) => {
   } catch (err) {
     console.error('Feedback fetch error:', err);
     res.status(500).json({ message: 'Failed to load feedback.' });
+  }
+});
+
+// Get all kinks
+app.get('/api/kinks', async (req, res) => {
+  try {
+    const Kink = require('./models/Kink');
+    const kinks = await Kink.find({});
+    res.json({ kinks });
+  } catch (error) {
+    console.error('Error fetching kinks:', error);
+    res.status(500).json({ message: 'Failed to fetch kinks.' });
+  }
+});
+
+// POST endpoint to create a new kink
+app.post('/api/kinks', async (req, res) => {
+  try {
+    const Kink = require('./models/Kink');  // Ensure this path is correct
+    const { name, description } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required.' });
+    }
+
+    const newKink = new Kink({ name, description });
+    await newKink.save();
+    res.status(201).json({ message: 'Kink created successfully.', kink: newKink });
+  } catch (error) {
+    console.error('Error creating kink:', error);
+    res.status(500).json({ message: 'Failed to create kink.' });
   }
 });
 

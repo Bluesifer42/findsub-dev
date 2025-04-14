@@ -8,9 +8,9 @@ function Register() {
     role: '',
     gender: '',
     dateOfBirth: '',
-    experienceLevel: '',
-    interests: '',
-    limits: ''
+    experienceLevel: 'Beginner',
+    limits: '',
+    phoneNumber: '' // New field for phone number
   });
 
   const [status, setStatus] = useState('');
@@ -24,26 +24,30 @@ function Register() {
     e.preventDefault();
 
     const body = {
-      ...formData,
-      interests: formData.interests.split(',').map((tag) => tag.trim())
+      ...formData
+      // Interests field removed; users will select kinks on their profile
     };
 
-    const res = await fetch(`http://localhost:5000/api/register`, {
+    try {
+      const res = await fetch(`http://localhost:5000/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
 
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+      const data = await res.json();
 
-    const data = await res.json();
-
-    if (res.ok) {
-      setStatus('✅ Registration successful! Redirecting...');
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 2000);
-    } else {
-      setStatus(`❌ ${data.message}`);
+      if (res.ok) {
+        setStatus('✅ Registration successful! Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        setStatus(`❌ ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setStatus('❌ Server error. Please try again later.');
     }
   };
 
@@ -76,7 +80,8 @@ function Register() {
           <option value="Advanced">Advanced</option>
         </select><br />
 
-        <input name="interests" placeholder="Interests (comma-separated)" onChange={handleChange} /><br />
+        <input name="phoneNumber" placeholder="Phone Number (optional)" onChange={handleChange} /><br />
+
         <textarea name="limits" placeholder="List any hard limits or boundaries" onChange={handleChange}></textarea><br />
 
         <button type="submit">Register</button>

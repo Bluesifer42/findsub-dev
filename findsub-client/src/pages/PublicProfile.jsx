@@ -14,19 +14,25 @@ function PublicProfile() {
       .then(data => {
         setFeedback(data.feedback);
         if (data.feedback.length > 0) {
-          const ratings = data.feedback.map(f => f.rating);
-          const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+          // Average based on general ratings average, if available
+          const allRatings = data.feedback.map(f => {
+            if (f.generalRatings) {
+              const values = Object.values(f.generalRatings);
+              return values.reduce((a, b) => a + b, 0) / values.length;
+            }
+            return f.rating;
+          });
+          const avg = allRatings.reduce((a, b) => a + b, 0) / allRatings.length;
           setAverage(avg.toFixed(1));
         }
       });
-  
+
     // Fetch basic user info
     fetch(`http://localhost:5000/api/user/${userId}`)
       .then(res => res.json())
       .then(data => setUserMeta(data.user))
       .catch(() => setUserMeta({}));
   }, [userId]);
-  
 
   return (
     <div>
@@ -43,7 +49,37 @@ function PublicProfile() {
         feedback.map(f => (
           <div key={f._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
             <p><strong>From:</strong> {f.fromUser.username} ({f.fromUser.role})</p>
-            <p><strong>Rating:</strong> ⭐ {f.rating} / 5</p>
+            {f.generalRatings && (
+              <>
+                <p><strong>General Ratings:</strong></p>
+                <ul>
+                  {Object.entries(f.generalRatings).map(([key, value]) => (
+                    <li key={key}>{key}: {value} / 5</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {f.interestRatings && (
+              <>
+                <p><strong>Interest Ratings:</strong></p>
+                <ul>
+                  {Array.from(Object.entries(f.interestRatings)).map(([key, value]) => (
+                    <li key={key}>{key}: {value !== null ? `${value} / 5` : 'N/A'}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {f.badgeGifting && (
+              <>
+                <p><strong>Badges Gifted:</strong></p>
+                <ul>
+                  {Array.from(Object.entries(f.badgeGifting)).map(([key, value]) => (
+                    <li key={key}>{key}: {value}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p><strong>Honesty Score:</strong> {f.honestyScore} / 5</p>
             {f.comment && <p><strong>Comment:</strong> {f.comment}</p>}
           </div>
         ))

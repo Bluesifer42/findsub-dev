@@ -6,22 +6,22 @@ const JobSchema = new mongoose.Schema({
   description: { type: String, required: true },
   location: { type: String, default: 'Online' },
   compensation: { type: String, default: 'Unpaid' },
-  duration: { type: String },
+  // Removed "duration" field per earlier changes.
   requirements: { type: String },
 
+  // Updated category enum to match your requirements.
   category: {
     type: String,
     enum: [
-      'Chauffeur',
-      'Domestic Cleaning',
-      'Meal Prep and Service',
-      'Gardener',
-      'Stable Slave',
-      'Boot Licker',
+      'Domestic Servitude',
+      'Footwear Cleaning',
+      'Worship Sessions',
+      'Meal Prep Service',
       'Other'
     ],
     default: 'Other'
   },
+  requiredKinks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Kink' }],
 
   startDate: { type: Date, required: true },
   startTime: { type: String }, // e.g., "14:00"
