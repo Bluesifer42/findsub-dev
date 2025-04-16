@@ -9,71 +9,145 @@ const ratingOptions = [
   { value: 'Live for it', label: 'Live for it' }
 ];
 
+// Helper functions:
+// getInterestKey now returns the underlying kink's ID (string).
+const getInterestKey = (interest) => {
+  if (typeof interest === 'string') return interest;
+  if (interest && interest._id) return interest._id.toString();
+  if (interest && interest.kink && interest.kink._id)
+    return interest.kink._id.toString();
+  return '';
+};
+
+// getInterestName checks if the saved kink is stored as a populated object with a label.
+const getInterestName = (interest) => {
+  if (typeof interest === 'string') return interest;
+  if (interest && interest.label) return interest.label;
+  if (interest && interest.kink && interest.kink.name)
+    return interest.kink.name;
+  return 'Unknown';
+};
+
 function KinksTab() {
-  const [allKinks, setAllKinks] = useState([]);
-  const [newSelections, setNewSelections] = useState([]);
-  const [savedKinks, setSavedKinks] = useState([]);   // Active kink selections
-  const [kinkHistory, setKinkHistory] = useState([]);   // History of all kinks ever added
+  const [allKinks, setAllKinks] = useState([]);           // Options from backend
+  const [newSelections, setNewSelections] = useState([]);   // Newly selected options from dropdown
+  const [savedKinks, setSavedKinks] = useState([]);         // Active saved kink selections for the user
+  const [kinkHistory, setKinkHistory] = useState([]);       // Historical saved kink data
+  const [aggRatings, setAggRatings] = useState({});         // Aggregated feedback ratings
   const [status, setStatus] = useState('');
   const [user, setUser] = useState(null);
 
-  // On mount: load user info and available kinks.
+  // On mount: load current user and available kink options.
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
       const parsed = JSON.parse(stored);
       setUser(parsed);
+      // Use saved kinks and history if they exist.
       setSavedKinks(parsed.kinks || []);
       setKinkHistory(parsed.kinkHistory || []);
     }
     fetch('http://localhost:5000/api/kinks')
-      .then(res => res.json())
-      .then(data => {
-        // Map returned kinks to format required by react-select.
-        const options = data.kinks.map(kink => ({
-          value: kink._id,
+      .then((res) => res.json())
+      .then((data) => {
+        // Map each kink to an option object for react-select.
+        const options = data.kinks.map((kink) => ({
+          value: kink._id.toString(),
           label: kink.name,
           description: kink.description
         }));
         setAllKinks(options);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Error fetching kinks:', err);
         setStatus('Error fetching kink data');
       });
   }, []);
 
-  // Build dropdown options: all kinks minus those currently active.
-  const availableOptions = allKinks.filter(option => 
-    !savedKinks.some(saved => saved.kink === option.value)
+  // If the user is a Sub, aggregate feedback ratings.
+  useEffect(() => {
+    const userId = user?._id || user?.id;
+    if (userId && user.role === 'Sub') {
+      fetch(`http://localhost:5000/api/feedback/user/${userId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const agg = {};
+          data.feedback.forEach((f) => {
+            if (f.interestRatings && typeof f.interestRatings === 'object') {
+              const entries = Object.entries(f.interestRatings || {});
+              entries.forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                  if (!agg[key]) {
+                    agg[key] = { total: 0, count: 0 };
+                  }
+                  agg[key].total += Number(value);
+                  agg[key].count += 1;
+                }
+              });
+            }
+          });
+          const finalAgg = {};
+          Object.keys(agg).forEach((key) => {
+            finalAgg[key] = (agg[key].total / agg[key].count).toFixed(1);
+          });
+          setAggRatings(finalAgg);
+        })
+        .catch((err) => console.error('Feedback aggregation error:', err));
+    }
+  }, [user]);
+
+  // Build dropdown options: show only kinks not already saved.
+  const availableOptions = allKinks.filter((option) =>
+    !savedKinks.some((item) => {
+      // For saved items, if they're stored as populated objects, use their _id.
+      const savedKinkId =
+        typeof item.kink === 'object' && item.kink._id
+          ? item.kink._id.toString()
+          : String(item.kink);
+      return savedKinkId === option.value;
+    })
   );
 
   const handleSelectChange = (selectedOptions) => {
     setNewSelections(selectedOptions || []);
   };
 
+  // Updated handleAddKinks: store the full kink object (populated) instead of only the ID.
   const handleAddKinks = () => {
     if (newSelections.length === 0) return;
-    const added = newSelections.map(option => {
-      // Check if this kink already exists in the user's history.
-      const existing = kinkHistory.find(entry => entry.kink === option.value);
+    const added = newSelections.map((option) => {
+      // Check if this kink exists in kinkHistory
+      const existing = kinkHistory.find((entry) => String(entry.kink) === option.value);
       if (existing) {
-        return existing; // Use previously saved values.
+        // Build a populated object using available option data.
+        return { kink: { _id: option.value, label: option.label, description: option.description }, rating: existing.rating };
       } else {
-        return { kink: option.value, rating: 'Like it' };
+        return { kink: { _id: option.value, label: option.label, description: option.description }, rating: 'Like it' };
       }
     });
-    // Merge new added entries with current savedKinks (avoiding duplicates).
     const updatedSaved = [...savedKinks];
-    added.forEach(entry => {
-      if (!updatedSaved.some(item => item.kink === entry.kink)) {
+    added.forEach((entry) => {
+      if (
+        !updatedSaved.some((item) => {
+          const id = (typeof item.kink === 'object' && item.kink._id)
+            ? item.kink._id.toString()
+            : String(item.kink);
+          return id === String(entry.kink._id);
+        })
+      ) {
         updatedSaved.push(entry);
       }
     });
-    // Also update kinkHistory with any new entries.
     const updatedHistory = [...kinkHistory];
-    added.forEach(entry => {
-      if (!updatedHistory.some(item => item.kink === entry.kink)) {
+    added.forEach((entry) => {
+      if (
+        !updatedHistory.some((item) => {
+          const id = (typeof item.kink === 'object' && item.kink._id)
+            ? item.kink._id.toString()
+            : String(item.kink);
+          return id === String(entry.kink._id);
+        })
+      ) {
         updatedHistory.push(entry);
       }
     });
@@ -84,16 +158,23 @@ function KinksTab() {
   };
 
   const handleRatingChange = (kinkId, newRating) => {
-    const updated = savedKinks.map(item => {
-      if (item.kink === kinkId) {
+    const updated = savedKinks.map((item) => {
+      const currentId =
+        typeof item.kink === 'object' && item.kink._id
+          ? item.kink._id.toString()
+          : String(item.kink);
+      if (currentId === kinkId) {
         return { ...item, rating: newRating };
       }
       return item;
     });
     setSavedKinks(updated);
-    // Also update in the kinkHistory.
-    const updatedHistory = kinkHistory.map(item => {
-      if (item.kink === kinkId) {
+    const updatedHistory = kinkHistory.map((item) => {
+      const currentId =
+        typeof item.kink === 'object' && item.kink._id
+          ? item.kink._id.toString()
+          : String(item.kink);
+      if (currentId === kinkId) {
         return { ...item, rating: newRating };
       }
       return item;
@@ -102,8 +183,13 @@ function KinksTab() {
   };
 
   const handleRemoveKink = (kinkId) => {
-    // Remove only from active selections.
-    const updated = savedKinks.filter(item => item.kink !== kinkId);
+    const updated = savedKinks.filter((item) => {
+      const currentId =
+        typeof item.kink === 'object' && item.kink._id
+          ? item.kink._id.toString()
+          : String(item.kink);
+      return currentId !== kinkId;
+    });
     setSavedKinks(updated);
     setStatus('Kink removed from active selections. Its history is preserved.');
   };
@@ -115,8 +201,8 @@ function KinksTab() {
       setStatus('Error: User ID not found.');
       return;
     }
-    const updatedUser = { 
-      ...user, 
+    const updatedUser = {
+      ...user,
       kinks: savedKinks,
       kinkHistory: kinkHistory
     };
@@ -145,9 +231,7 @@ function KinksTab() {
     <div>
       <strong>{option.label}</strong>
       {option.description && (
-        <div style={{ fontSize: '0.8em', color: '#666' }}>
-          {option.description}
-        </div>
+        <div style={{ fontSize: '0.8em', color: '#666' }}>{option.description}</div>
       )}
     </div>
   );
@@ -157,7 +241,7 @@ function KinksTab() {
       <h2>Your Kinks</h2>
       {status && <p>{status}</p>}
 
-      {/* Section for adding new kink selections */}
+      {/* Dropdown for adding new kink selections */}
       <div style={{ marginBottom: '1rem' }}>
         <h3>Select New Kinks</h3>
         <Select
@@ -173,7 +257,7 @@ function KinksTab() {
         </button>
       </div>
 
-      {/* Table of Active (Saved) Kinks */}
+      {/* Table displaying saved kink selections */}
       <div>
         <h3>Your Selected Kinks</h3>
         {savedKinks.length === 0 ? (
@@ -189,34 +273,37 @@ function KinksTab() {
               </tr>
             </thead>
             <tbody>
-              {savedKinks.map(item => {
-                const kinkData = allKinks.find(k => k.value === item.kink) || {};
+              {savedKinks.map((item, index) => {
+                const kinkId =
+                  typeof item.kink === 'object' && item.kink._id
+                    ? item.kink._id.toString()
+                    : String(item.kink);
+                const displayName = item.kink && item.kink.label 
+                  ? item.kink.label 
+                  : getInterestName(item);
+                const avgRating = aggRatings[kinkId] ? aggRatings[kinkId] : 'N/A';
                 return (
-                  <tr key={item.kink} style={{ borderBottom: '1px solid #eee' }}>
+                  <tr key={`${kinkId}_${index}`} style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '0.5rem' }}>
-                      {kinkData.label || item.kink}
-                      {kinkData.description && (
-                        <div style={{ fontSize: '0.8em', color: '#666' }}>
-                          {kinkData.description}
-                        </div>
-                      )}
+                      {displayName}
                     </td>
                     <td style={{ padding: '0.5rem' }}>
                       <select
                         value={item.rating}
-                        onChange={(e) => handleRatingChange(item.kink, e.target.value)}
+                        onChange={(e) => handleRatingChange(kinkId, e.target.value)}
                       >
                         {ratingOptions.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
                         ))}
                       </select>
                     </td>
                     <td style={{ padding: '0.5rem' }}>
-                      {/* Placeholder: Future enhancement for displaying feedback rating */}
-                      N/A
+                      {avgRating} / 5
                     </td>
                     <td style={{ padding: '0.5rem' }}>
-                      <button onClick={() => handleRemoveKink(item.kink)}>Remove</button>
+                      <button onClick={() => handleRemoveKink(kinkId)}>Remove</button>
                     </td>
                   </tr>
                 );

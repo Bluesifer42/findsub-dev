@@ -87,11 +87,13 @@ function Profile() {
             <p>
               <strong>From:</strong> {f.fromUser.username} ({f.fromUser.role})
             </p>
-            {f.generalRatings && (
+            {f.generalRatings && typeof f.generalRatings === 'object' && (
               <div>
-                <p><strong>General Ratings:</strong></p>
+                <p>
+                  <strong>General Ratings:</strong>
+                </p>
                 <ul>
-                  {Array.from(f.generalRatings.entries()).map(([key, value]) => (
+                  {Object.entries(f.generalRatings).map(([key, value]) => (
                     <li key={key}>
                       {key}: {value} / 5
                     </li>
@@ -100,7 +102,9 @@ function Profile() {
               </div>
             )}
             {f.honestyScore !== undefined && (
-              <p><strong>Honesty Score:</strong> {f.honestyScore} / 5</p>
+              <p>
+                <strong>Honesty Score:</strong> {f.honestyScore} / 5
+              </p>
             )}
             {f.comment && (
               <p>
@@ -121,13 +125,22 @@ function Profile() {
 
       {/* Tab navigation */}
       <div style={{ marginBottom: '1rem' }}>
-        <button onClick={() => setTab('info')} style={{ padding: '0.5rem 1rem', marginRight: '0.5rem' }}>
+        <button
+          onClick={() => setTab('info')}
+          style={{ padding: '0.5rem 1rem', marginRight: '0.5rem' }}
+        >
           Info
         </button>
-        <button onClick={() => setTab('kinks')} style={{ padding: '0.5rem 1rem', marginRight: '0.5rem' }}>
+        <button
+          onClick={() => setTab('kinks')}
+          style={{ padding: '0.5rem 1rem', marginRight: '0.5rem' }}
+        >
           Kinks
         </button>
-        <button onClick={() => setTab('feedback')} style={{ padding: '0.5rem 1rem' }}>
+        <button
+          onClick={() => setTab('feedback')}
+          style={{ padding: '0.5rem 1rem' }}
+        >
           Feedback
         </button>
       </div>
@@ -137,7 +150,8 @@ function Profile() {
         <div>
           <form onSubmit={handleSave}>
             <label>
-              Username:<br />
+              Username:
+              <br />
               <input
                 name="username"
                 value={user.username || ''}
@@ -146,7 +160,8 @@ function Profile() {
             </label>
             <br />
             <label>
-              Email:<br />
+              Email:
+              <br />
               <input
                 name="email"
                 value={user.email || ''}
@@ -161,7 +176,8 @@ function Profile() {
             </label>
             <br />
             <label>
-              Phone Number:<br />
+              Phone Number:
+              <br />
               <input
                 name="phoneNumber"
                 value={user.phoneNumber || ''}
@@ -176,7 +192,8 @@ function Profile() {
             </label>
             <br />
             <label>
-              Experience Level:<br />
+              Experience Level:
+              <br />
               <select
                 name="experienceLevel"
                 value={user.experienceLevel || 'Beginner'}
@@ -189,7 +206,8 @@ function Profile() {
             </label>
             <br />
             <label>
-              Limits:<br />
+              Limits:
+              <br />
               <textarea
                 name="limits"
                 value={user.limits || ''}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 function Register() {
+  // Updated state: removed the "limits" field.
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -9,7 +10,6 @@ function Register() {
     gender: '',
     dateOfBirth: '',
     experienceLevel: 'Beginner',
-    limits: '',
     phoneNumber: '' // New field for phone number
   });
 
@@ -25,7 +25,7 @@ function Register() {
 
     const body = {
       ...formData
-      // Interests field removed; users will select kinks on their profile
+      // The interests field has been removed; users will update their kinks on their profile.
     };
 
     try {
@@ -81,8 +81,6 @@ function Register() {
         </select><br />
 
         <input name="phoneNumber" placeholder="Phone Number (optional)" onChange={handleChange} /><br />
-
-        <textarea name="limits" placeholder="List any hard limits or boundaries" onChange={handleChange}></textarea><br />
 
         <button type="submit">Register</button>
       </form>

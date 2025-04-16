@@ -1,7 +1,40 @@
 import React, { useState } from 'react';
 
+// Updated helper functions to extract key and name from an interest object.
+// If the interest has a 'kink' property (as stored in user.kinks), use that object's _id and name.
+const getInterestKey = (interest) => {
+  // If interest is a string, return it.
+  if (typeof interest === 'string') return interest;
+  // If interest is an object with a 'kink' property, return kink._id as string.
+  if (interest && interest.kink) {
+    if (typeof interest.kink === 'string') {
+      return interest.kink;
+    } else if (interest.kink._id) {
+      return interest.kink._id.toString();
+    }
+  }
+  // Fall back to the object's own _id if present.
+  if (interest && interest._id) return interest._id.toString();
+  return '';
+};
+
+const getInterestName = (interest) => {
+  // If interest is a string, return it.
+  if (typeof interest === 'string') return interest;
+  // If interest is an object with a 'kink' property, return kink.name.
+  if (interest && interest.kink) {
+    if (typeof interest.kink === 'string') {
+      return interest.kink;
+    } else if (interest.kink.name) {
+      return interest.kink.name;
+    }
+  }
+  // Fall back to a generic "Unknown" if not found.
+  return 'Unknown';
+};
+
 const FeedbackForm = ({ jobId, fromUser, toUser, role, targetInterests }) => {
-  // Define rating fields for each role:
+  // Define general rating fields for each role:
   // When a Dom leaves feedback for a Sub:
   const domRatingFields = {
     obedience: 5,
@@ -21,19 +54,17 @@ const FeedbackForm = ({ jobId, fromUser, toUser, role, targetInterests }) => {
     environment: 5
   };
 
-  // Set initial general ratings based on who is leaving feedback.
-  const initialGeneralRatings = role === 'Dom' ? domRatingFields :
-                                role === 'Sub' ? subRatingFields : {};
+  const initialGeneralRatings = role === 'Dom' ? domRatingFields : role === 'Sub' ? subRatingFields : {};
 
   const [generalRatings, setGeneralRatings] = useState(initialGeneralRatings);
 
-  // For Dom feedback only: set up interest-based ratings and badge gifting,
-  // using the targetInterests from the Sub's profile.
+  // For Dom feedback: set up interest-based ratings and badge gifting.
   const [interestRatings, setInterestRatings] = useState(() => {
     if (role === 'Dom' && targetInterests && targetInterests.length > 0) {
       const init = {};
-      targetInterests.forEach(interest => {
-        init[interest] = 5;
+      targetInterests.forEach((interest) => {
+        const key = getInterestKey(interest);
+        init[key] = 5; // default rating
       });
       return init;
     }
@@ -43,60 +74,61 @@ const FeedbackForm = ({ jobId, fromUser, toUser, role, targetInterests }) => {
   const [badgeGifting, setBadgeGifting] = useState(() => {
     if (role === 'Dom' && targetInterests && targetInterests.length > 0) {
       const init = {};
-      targetInterests.forEach(interest => {
-        init[interest] = 0;
+      targetInterests.forEach((interest) => {
+        const key = getInterestKey(interest);
+        init[key] = 0; // default badges: 0
       });
       return init;
     }
     return {};
   });
 
-  // For Dom feedback only: track if a given interest is applicable.
+  // For Dom feedback: whether each interest rating is applicable.
   const [interestApplicable, setInterestApplicable] = useState(() => {
     if (role === 'Dom' && targetInterests && targetInterests.length > 0) {
       const init = {};
-      targetInterests.forEach(interest => {
-        init[interest] = true;
+      targetInterests.forEach((interest) => {
+        const key = getInterestKey(interest);
+        init[key] = true;
       });
       return init;
     }
     return {};
   });
 
-  // Honesty score defaults to 5, same for comment.
   const [honestyScore, setHonestyScore] = useState(5);
   const [comment, setComment] = useState('');
 
-  // Update handler for general ratings.
+  // Handlers for general ratings.
   const handleGeneralRatingChange = (field, value) => {
-    setGeneralRatings(prev => ({ ...prev, [field]: Number(value) }));
+    setGeneralRatings((prev) => ({ ...prev, [field]: Number(value) }));
   };
 
-  // For Dom feedback: update handler for interest ratings.
-  const handleInterestRatingChange = (interest, value) => {
-    setInterestRatings(prev => ({ ...prev, [interest]: Number(value) }));
+  // Handlers for interest ratings.
+  const handleInterestRatingChange = (interestKey, value) => {
+    setInterestRatings((prev) => ({ ...prev, [interestKey]: Number(value) }));
   };
 
-  // For Dom feedback: handler for adjusting badge gifting (0-5)
-  const handleBadgeGiftingChange = (interest, delta) => {
-    setBadgeGifting(prev => {
-      const newVal = prev[interest] + delta;
+  // Handler for badge gifting adjustments.
+  const handleBadgeGiftingChange = (interestKey, delta) => {
+    setBadgeGifting((prev) => {
+      const newVal = prev[interestKey] + delta;
       if (newVal < 0 || newVal > 5) return prev;
-      return { ...prev, [interest]: newVal };
+      return { ...prev, [interestKey]: newVal };
     });
   };
 
-  const toggleInterestApplicable = (interest) => {
-    setInterestApplicable(prev => ({
+  const toggleInterestApplicable = (interestKey) => {
+    setInterestApplicable((prev) => ({
       ...prev,
-      [interest]: !prev[interest]
+      [interestKey]: !prev[interestKey]
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Build the payload.
+    // Build payload.
     const payload = {
       jobId,
       fromUser,
@@ -106,17 +138,16 @@ const FeedbackForm = ({ jobId, fromUser, toUser, role, targetInterests }) => {
       comment
     };
 
-    // For Dom feedback, include interest-based fields.
     if (role === 'Dom' && targetInterests && targetInterests.length > 0) {
       const ir = {};
-      targetInterests.forEach(interest => {
-        ir[interest] = interestApplicable[interest] ? interestRatings[interest] : null;
+      targetInterests.forEach((interest) => {
+        const key = getInterestKey(interest);
+        ir[key] = interestApplicable[key] ? interestRatings[key] : null;
       });
       payload.interestRatings = ir;
       payload.badgeGifting = badgeGifting;
     }
 
-    // Log payload for debugging.
     console.log('Submitting feedback payload:', payload);
 
     try {
@@ -153,46 +184,49 @@ const FeedbackForm = ({ jobId, fromUser, toUser, role, targetInterests }) => {
         </div>
       ))}
 
-      {/* If a Dom is leaving feedback, show interest-based ratings and badge gifting options */}
       {role === 'Dom' && targetInterests && targetInterests.length > 0 && (
         <>
           <h4>Interest-Based Ratings & Badge Gifting (0-5)</h4>
-          {targetInterests.map(interest => (
-            <div key={interest} style={{ border: '1px solid #ccc', marginBottom: '1rem', padding: '0.5rem' }}>
-              <h5>{interest}</h5>
-              <label>
-                Applicable:{' '}
-                <input
-                  type="checkbox"
-                  checked={interestApplicable[interest]}
-                  onChange={() => toggleInterestApplicable(interest)}
-                />
-                (Uncheck if not applicable)
-              </label>
-              {interestApplicable[interest] && (
-                <>
-                  <div>
-                    <label>
-                      Rating (0-5):{' '}
-                      <input
-                        type="number"
-                        min="0"
-                        max="5"
-                        value={interestRatings[interest]}
-                        onChange={(e) => handleInterestRatingChange(interest, e.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <div>
-                    <p>Gift Badges (0-5):</p>
-                    <button type="button" onClick={() => handleBadgeGiftingChange(interest, -1)}>-</button>
-                    <span style={{ margin: '0 10px' }}>{badgeGifting[interest]}</span>
-                    <button type="button" onClick={() => handleBadgeGiftingChange(interest, 1)}>+</button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
+          {targetInterests.map((interest) => {
+            const key = getInterestKey(interest);
+            const name = getInterestName(interest);
+            return (
+              <div key={key} style={{ border: '1px solid #ccc', marginBottom: '1rem', padding: '0.5rem' }}>
+                <h5>{name}</h5>
+                <label>
+                  Applicable:{' '}
+                  <input
+                    type="checkbox"
+                    checked={interestApplicable[key]}
+                    onChange={() => toggleInterestApplicable(key)}
+                  />
+                  (Uncheck if not applicable)
+                </label>
+                {interestApplicable[key] && (
+                  <>
+                    <div>
+                      <label>
+                        Rating (0-5):{' '}
+                        <input
+                          type="number"
+                          min="0"
+                          max="5"
+                          value={interestRatings[key]}
+                          onChange={(e) => handleInterestRatingChange(key, e.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <div>
+                      <p>Gift Badges (0-5):</p>
+                      <button type="button" onClick={() => handleBadgeGiftingChange(key, -1)}>-</button>
+                      <span style={{ margin: '0 10px' }}>{badgeGifting[key]}</span>
+                      <button type="button" onClick={() => handleBadgeGiftingChange(key, 1)}>+</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </>
       )}
 

@@ -1,3 +1,6 @@
+// ==============================
+// Server Setup and Model Imports
+// ==============================
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -6,45 +9,68 @@ require('dotenv').config();
 
 const app = express();
 
+// Import Models
 const User = require('./models/User');
 const Job = require('./models/Job');
 const Application = require('./models/Application');
 const Feedback = require('./models/Feedback');
-const Kink = require('./models/Kink');
+const Kink = require('./models/Kink'); // Kink model is registered
 
-// User Reputation: Update reputation (basic average rating)
+// ==============================
+// Helper Function: Update User Reputation
+// ==============================
 async function updateUserReputation(userId) {
-  const feedback = await Feedback.find({ toUser: userId });
-  if (feedback.length === 0) return;
+  try {
+    const feedbackDocs = await Feedback.find({ toUser: userId });
+    if (feedbackDocs.length === 0) return;
 
-  const ratings = feedback.map(f => {
-    // Use general average if available, otherwise fallback to overall rating
-    if (f.generalRatings) {
-      const values = Object.values(f.generalRatings);
-      return values.reduce((a, b) => a + b, 0) / values.length;
-    }
-    return f.rating;
-  });
-  const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-
-  await User.findByIdAndUpdate(userId, {
-    reputationScore: avg.toFixed(1)
-  });
+    // Calculate average rating using generalRatings (if available) or fallback to 'rating'.
+    const ratings = feedbackDocs.map(f => {
+      if (f.generalRatings) {
+        // f.generalRatings may be a plain object.
+        const values = Object.values(f.generalRatings);
+        return values.reduce((a, b) => a + b, 0) / values.length;
+      }
+      return f.rating;
+    });
+    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    await User.findByIdAndUpdate(userId, {
+      reputationScore: avg.toFixed(1)
+    });
+  } catch (error) {
+    console.error('Error updating user reputation:', error);
+  }
 }
 
+// ==============================
 // Middleware
+// ==============================
 app.use(cors());
 app.use(express.json());
 
-// ====== Routes ======
+// ==============================
+// Routes
+// ==============================
 
-// Create Job
+/**
+ * Create Job
+ * Creates a new job posting including an optional 'requiredKinks' array.
+ */
 app.post('/api/jobs', async (req, res) => {
   try {
     const {
-      posterId, title, description, location,
-      compensation, duration, requirements,
-      category, expiresAt, startDate, startTime, minDuration
+      posterId,
+      title,
+      description,
+      location,
+      compensation,
+      requirements,
+      category,
+      expiresAt,
+      startDate,
+      startTime,
+      minDuration,
+      requiredKinks // Array of kink IDs.
     } = req.body;
 
     if (!posterId || !title || !description || !startDate) {
@@ -57,13 +83,13 @@ app.post('/api/jobs', async (req, res) => {
       description,
       location,
       compensation,
-      duration,
       requirements,
       category,
       expiresAt,
       startDate,
       startTime,
-      minDuration
+      minDuration,
+      requiredKinks
     });
 
     await newJob.save();
@@ -74,16 +100,17 @@ app.post('/api/jobs', async (req, res) => {
   }
 });
 
-// Update Job Status
+/**
+ * Update Job Status
+ * Updates job status. If status is 'completed' or 'failed', locks the job for further editing.
+ */
 app.post('/api/jobs/status', async (req, res) => {
   try {
     const { jobId, newStatus } = req.body;
-
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ message: 'Job not found' });
 
     job.status = newStatus;
-
     if (['completed', 'failed'].includes(newStatus)) {
       job.isEditable = false;
     }
@@ -96,11 +123,13 @@ app.post('/api/jobs/status', async (req, res) => {
   }
 });
 
-// Update & Re-List Cancelled Job
+/**
+ * Update & Re-List Cancelled Job
+ * Updates a cancelled job and re-lists it (editing allowed only for cancelled jobs).
+ */
 app.post('/api/jobs/update', async (req, res) => {
   try {
     const { jobId, title, description, startDate, startTime, minDuration, category, newStatus } = req.body;
-
     const job = await Job.findById(jobId);
     if (!job || job.status !== 'cancelled') {
       return res.status(404).json({ message: 'Job not found or not editable.' });
@@ -125,17 +154,18 @@ app.post('/api/jobs/update', async (req, res) => {
   }
 });
 
-// Permanently Delete Cancelled Job
+/**
+ * Permanently Delete Cancelled Job
+ * Deletes a job (only if status is 'cancelled').
+ */
 app.delete('/api/jobs/delete/:jobId', async (req, res) => {
   try {
     const job = await Job.findById(req.params.jobId);
     if (!job || job.status !== 'cancelled') {
       return res.status(400).json({ message: 'Only cancelled jobs can be deleted.' });
     }
-
     await Job.findByIdAndDelete(req.params.jobId);
     await Application.deleteMany({ jobId: req.params.jobId });
-
     res.json({ message: 'Job deleted successfully.' });
   } catch (err) {
     console.error('Job delete error:', err);
@@ -143,19 +173,19 @@ app.delete('/api/jobs/delete/:jobId', async (req, res) => {
   }
 });
 
-// Apply to Job
+/**
+ * Apply to Job
+ * Allows a sub to apply for a job.
+ */
 app.post('/api/apply', async (req, res) => {
   try {
     const { jobId, applicantId, coverLetter } = req.body;
-
     const existing = await Application.findOne({ jobId, applicantId });
     if (existing) {
       return res.status(400).json({ message: 'You have already applied to this job.' });
     }
-
     const application = new Application({ jobId, applicantId, coverLetter });
     await application.save();
-
     res.status(201).json({ message: 'Application submitted successfully.' });
   } catch (error) {
     console.error('Application error:', error);
@@ -163,11 +193,15 @@ app.post('/api/apply', async (req, res) => {
   }
 });
 
-// Get Applications for Job
+/**
+ * Get Applications for a Job
+ * Returns all applications for a given job with applicant details.
+ */
 app.get('/api/applications/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
-    const applications = await Application.find({ jobId }).populate('applicantId', 'username role experienceLevel');
+    const applications = await Application.find({ jobId })
+      .populate('applicantId', 'username role experienceLevel');
     res.json({ applications });
   } catch (error) {
     console.error('Fetch applications error:', error);
@@ -175,11 +209,13 @@ app.get('/api/applications/:jobId', async (req, res) => {
   }
 });
 
-// Select Applicant
+/**
+ * Select Applicant
+ * Marks a job as filled by selecting an applicant.
+ */
 app.post('/api/jobs/select', async (req, res) => {
   try {
     const { jobId, applicantId } = req.body;
-
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ message: 'Job not found.' });
 
@@ -196,11 +232,13 @@ app.post('/api/jobs/select', async (req, res) => {
   }
 });
 
-// Job History
+/**
+ * Job History
+ * Retrieves completed jobs for a user (as poster or selected applicant).
+ */
 app.get('/api/jobs/history/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-
     const jobs = await Job.find({
       $or: [
         { selectedApplicant: userId, isFilled: true },
@@ -210,7 +248,6 @@ app.get('/api/jobs/history/:userId', async (req, res) => {
       .sort({ fulfilledOn: -1 })
       .populate('posterId', 'username')
       .populate('selectedApplicant', 'username');
-
     res.json({ jobs });
   } catch (err) {
     console.error('Job history fetch error:', err);
@@ -218,7 +255,10 @@ app.get('/api/jobs/history/:userId', async (req, res) => {
   }
 });
 
-// Fetch Jobs (Public or Poster View)
+/**
+ * Fetch Jobs
+ * Retrieves jobs for public view or for a particular poster.
+ */
 app.get('/api/jobs', async (req, res) => {
   try {
     const { view, posterId } = req.query;
@@ -242,7 +282,6 @@ app.get('/api/jobs', async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('posterId', 'username')
       .populate('selectedApplicant', 'username');
-
     res.json({ jobs });
   } catch (error) {
     console.error('Fetch jobs error:', error);
@@ -250,13 +289,26 @@ app.get('/api/jobs', async (req, res) => {
   }
 });
 
-// Get a Single Job Detail  <-- NEW ENDPOINT
+/**
+ * Get a Single Job Detail
+ * Retrieves a job by ID with fully populated fields:
+ * - posterId and selectedApplicant (including their kinks).
+ * - requiredKinks populated with name and description.
+ */
 app.get('/api/job/:jobId', async (req, res) => {
   try {
     const job = await Job.findById(req.params.jobId)
-      .populate('posterId', 'username kinks')  
-      .populate('selectedApplicant', 'username kinks')
-      .populate('requiredKinks', 'name'); // Populate requiredKinks with the name field.
+      .populate({
+        path: 'posterId',
+        select: 'username kinks',
+        populate: { path: 'kinks.kink', select: 'name description' }
+      })
+      .populate({
+        path: 'selectedApplicant',
+        select: 'username kinks',
+        populate: { path: 'kinks.kink', select: 'name description' }
+      })
+      .populate('requiredKinks', 'name description');
     if (!job) return res.status(404).json({ message: 'Job not found.' });
     res.json({ job });
   } catch (error) {
@@ -265,30 +317,92 @@ app.get('/api/job/:jobId', async (req, res) => {
   }
 });
 
-// Get Feedback for a Job
+/**
+ * Get Feedback for a Job
+ * Retrieves all feedback for a given job.
+ */
 app.get('/api/feedback/job/:jobId', async (req, res) => {
   try {
-    const feedback = await Feedback.find({ jobId: req.params.jobId })
+    const feedbackDocs = await Feedback.find({ jobId: req.params.jobId })
       .populate('fromUser', 'username role');
-    res.json({ feedback });
+    res.json({ feedback: feedbackDocs });
   } catch (error) {
     console.error('Feedback fetch error:', error);
     res.status(500).json({ message: 'Failed to fetch feedback.' });
   }
 });
 
-// My Accepted Jobs
+/**
+ * My Accepted Jobs
+ * Retrieves jobs where the current user is the selected applicant.
+ */
 app.get('/api/my-jobs/:userId', async (req, res) => {
   try {
-    const jobs = await Job.find({ selectedApplicant: req.params.userId }).populate('posterId', 'username');
+    const jobs = await Job.find({ selectedApplicant: req.params.userId })
+      .populate('posterId', 'username');
     res.json({ jobs });
   } catch (err) {
-    console.error(err);
+    console.error('Error loading accepted jobs:', err);
     res.status(500).json({ message: 'Failed to load selected jobs.' });
   }
 });
 
-// New Feedback Endpoint
+/**
+ * Retract Application Endpoint
+ * Allows a sub to cancel (retract) their interest for a specific job.
+ * Expects jobId and applicantId as URL parameters.
+ */
+app.delete('/api/apply/:jobId/:applicantId', async (req, res) => {
+  try {
+    const { jobId, applicantId } = req.params;
+    const application = await Application.findOne({ jobId, applicantId });
+    if (!application) {
+      return res.status(404).json({ message: 'No application found to retract.' });
+    }
+    await application.deleteOne();
+    res.json({ message: 'Application retracted successfully.' });
+  } catch (error) {
+    console.error('Error retracting application:', error);
+    res.status(500).json({ message: 'Failed to retract application.' });
+  }
+});
+
+
+/**
+ * Get Jobs Awaiting Feedback
+ * Retrieves jobs (with status 'completed') where the specified user has not yet submitted feedback.
+ */
+app.get('/api/jobs/awaiting-feedback/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    // Find jobs that are completed and where the user is either the poster or the selected applicant.
+    const jobs = await Job.find({
+      status: 'completed',
+      isFilled: true,
+      $or: [
+        { posterId: userId },
+        { selectedApplicant: userId }
+      ]
+    });
+    // For each job, check if feedback from this user exists.
+    const awaitingFeedback = [];
+    for (const job of jobs) {
+      const feedbackExists = await Feedback.findOne({ jobId: job._id, fromUser: userId });
+      if (!feedbackExists) {
+        awaitingFeedback.push(job);
+      }
+    }
+    res.json({ jobs: awaitingFeedback });
+  } catch (err) {
+    console.error('Awaiting feedback fetch error:', err);
+    res.status(500).json({ message: 'Failed to load jobs awaiting feedback.' });
+  }
+});
+
+/**
+ * New Feedback Endpoint
+ * Accepts detailed feedback submissions. For Dom feedback, includes interestRatings and badgeGifting.
+ */
 app.post('/api/feedback/new', async (req, res) => {
   try {
     const {
@@ -296,19 +410,17 @@ app.post('/api/feedback/new', async (req, res) => {
       fromUser,
       toUser,
       generalRatings,
-      interestRatings,  // e.g., { "Domestic Cleaning": 4, "Boot Licking": 5 }
-      badgeGifting,     // e.g., { "Domestic Cleaning": 2, "Boot Licking": 1 }
+      interestRatings,  // e.g., { "kinkID1": 4, "kinkID2": 5 }
+      badgeGifting,     // e.g., { "kinkID1": 2, "kinkID2": 1 }
       honestyScore,
       comment
     } = req.body;
 
-    // Check if feedback from this user for the job already exists
     const existing = await Feedback.findOne({ jobId, fromUser });
     if (existing) {
       return res.status(400).json({ message: 'Feedback already submitted for this job.' });
     }
 
-    // Create and save the new feedback document
     const feedback = new Feedback({
       jobId,
       fromUser,
@@ -321,11 +433,8 @@ app.post('/api/feedback/new', async (req, res) => {
     });
 
     await feedback.save();
-
-    // Update reputation (average rating) for the recipient
     await updateUserReputation(toUser);
 
-    // Recalculate trust score using the model method from User
     const recipient = await User.findById(toUser);
     if (recipient && typeof recipient.recalculateTrustScore === 'function') {
       recipient.recalculateTrustScore();
@@ -339,21 +448,20 @@ app.post('/api/feedback/new', async (req, res) => {
   }
 });
 
-// Legacy feedback endpoints (optional - can be removed later)
+/**
+ * Legacy Feedback Endpoints (optional)
+ */
 app.post('/api/feedback', async (req, res) => {
   try {
     const { jobId, fromUser, toUser, rating, comment } = req.body;
-
     const existing = await Feedback.findOne({ jobId, fromUser });
     if (existing) return res.status(400).json({ message: 'Feedback already submitted.' });
-
     const feedback = new Feedback({ jobId, fromUser, toUser, rating, comment });
     await feedback.save();
     await updateUserReputation(toUser);
-
     res.status(201).json({ message: 'Feedback submitted successfully.' });
   } catch (err) {
-    console.error('Feedback error:', err);
+    console.error('Legacy feedback error:', err);
     res.status(500).json({ message: 'Failed to submit feedback.' });
   }
 });
@@ -361,34 +469,39 @@ app.post('/api/feedback', async (req, res) => {
 app.post('/api/feedback/poster', async (req, res) => {
   try {
     const { jobId, fromUser, toUser, rating, comment } = req.body;
-
     const existing = await Feedback.findOne({ jobId, fromUser });
     if (existing) return res.status(400).json({ message: 'Feedback already submitted.' });
-
     const feedback = new Feedback({ jobId, fromUser, toUser, rating, comment });
     await feedback.save();
     await updateUserReputation(toUser);
-
     res.status(201).json({ message: 'Feedback submitted successfully.' });
   } catch (error) {
-    console.error('Poster feedback error:', error);
+    console.error('Legacy poster feedback error:', error);
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// Public profile data
+/**
+ * Get Public Profile Data
+ * Returns basic public user info, with kinks and kinkHistory populated.
+ */
 app.get('/api/user/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('username role');
-    if (!user) return res.status(404).json({ message: 'User not found.' });
-    res.json({ user });
+    const userDoc = await User.findById(req.params.id)
+      .select('username role kinks kinkHistory')
+      .populate('kinks.kink', 'name description')
+      .populate('kinkHistory.kink', 'name description');
+    if (!userDoc) return res.status(404).json({ message: 'User not found.' });
+    res.json({ user: userDoc });
   } catch (error) {
     console.error('User lookup error:', error);
     res.status(500).json({ message: 'Failed to load user info.' });
   }
 });
 
-// Search Users
+/**
+ * Search Users
+ */
 app.get('/api/users', async (req, res) => {
   try {
     const roleFilter = req.query.role;
@@ -401,7 +514,10 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Registration
+/**
+ * Registration Endpoint
+ * Legacy: accepts "interests"; new clients should update kinks via Profile.
+ */
 app.post('/api/register', async (req, res) => {
   try {
     const {
@@ -432,7 +548,7 @@ app.post('/api/register', async (req, res) => {
       gender,
       dateOfBirth,
       experienceLevel,
-      interests,
+      interests, // Legacy field.
       limits
     });
 
@@ -444,31 +560,38 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login
+/**
+ * Login Endpoint
+ * Returns user details with populated kink data.
+ */
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials.' });
+    const userDoc = await User.findOne({ email })
+      .populate('kinks.kink', 'name description')
+      .populate('kinkHistory.kink', 'name description');
+    if (!userDoc) return res.status(401).json({ message: 'Invalid credentials.' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, userDoc.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
 
     res.json({
       message: 'Login successful.',
       user: {
-        _id: user._id,
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        gender: user.gender,
-        experienceLevel: user.experienceLevel,
-        interests: user.interests,
-        limits: user.limits,
-        phoneNumber: user.phoneNumber,
-        emailVerified: user.emailVerified,
-        phoneVerified: user.phoneVerified
+        _id: userDoc._id,
+        id: userDoc._id,
+        username: userDoc.username,
+        email: userDoc.email,
+        role: userDoc.role,
+        gender: userDoc.gender,
+        experienceLevel: userDoc.experienceLevel,
+        interests: userDoc.interests, // Legacy field.
+        limits: userDoc.limits,
+        phoneNumber: userDoc.phoneNumber,
+        emailVerified: userDoc.emailVerified,
+        phoneVerified: userDoc.phoneVerified,
+        kinks: userDoc.kinks,
+        kinkHistory: userDoc.kinkHistory
       }
     });
   } catch (err) {
@@ -477,15 +600,18 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Profile Update
+/**
+ * Profile Update
+ * Updates a user's profile and returns the updated kink data.
+ */
 app.put('/api/profile/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-
-    const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true })
+      .populate('kinks.kink', 'name description')
+      .populate('kinkHistory.kink', 'name description');
     if (!updatedUser) return res.status(404).json({ message: 'User not found.' });
-
     res.json({ message: 'Profile updated successfully.', user: updatedUser });
   } catch (error) {
     console.error('Profile update error:', error);
@@ -493,22 +619,27 @@ app.put('/api/profile/:id', async (req, res) => {
   }
 });
 
-// Feedback By User
+/**
+ * Get Feedback by User
+ * Retrieves all feedback where the specified user is the recipient.
+ */
 app.get('/api/feedback/user/:userId', async (req, res) => {
   try {
-    const feedback = await Feedback.find({ toUser: req.params.userId })
+    const feedbackDocs = await Feedback.find({ toUser: req.params.userId })
       .populate('fromUser', 'username role');
-    res.json({ feedback });
+    res.json({ feedback: feedbackDocs });
   } catch (err) {
     console.error('Feedback fetch error:', err);
     res.status(500).json({ message: 'Failed to load feedback.' });
   }
 });
 
-// Get all kinks
+/**
+ * Get All Kinks
+ * Retrieves a list of all available kinks.
+ */
 app.get('/api/kinks', async (req, res) => {
   try {
-    const Kink = require('./models/Kink');
     const kinks = await Kink.find({});
     res.json({ kinks });
   } catch (error) {
@@ -517,15 +648,16 @@ app.get('/api/kinks', async (req, res) => {
   }
 });
 
-// POST endpoint to create a new kink
+/**
+ * Create a New Kink
+ * Allows creation of a new kink.
+ */
 app.post('/api/kinks', async (req, res) => {
   try {
-    const Kink = require('./models/Kink');  // Ensure this path is correct
     const { name, description } = req.body;
     if (!name) {
       return res.status(400).json({ message: 'Name is required.' });
     }
-
     const newKink = new Kink({ name, description });
     await newKink.save();
     res.status(201).json({ message: 'Kink created successfully.', kink: newKink });
@@ -535,12 +667,16 @@ app.post('/api/kinks', async (req, res) => {
   }
 });
 
-// Test route
+/**
+ * Test Route
+ */
 app.get('/', (req, res) => {
   res.send('Welcome to the FindSub API!');
 });
 
-// MongoDB + Server Startup
+// ==============================
+// MongoDB Connection and Server Startup
+// ==============================
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');

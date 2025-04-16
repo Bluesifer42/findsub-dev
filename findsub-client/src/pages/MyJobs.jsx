@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import FeedbackForm from './FeedbackForm';
+// You can import FeedbackForm if needed for further operations
+// import FeedbackForm from './FeedbackForm';
 
 function MyJobs() {
   const [user, setUser] = useState(null);
@@ -13,10 +14,15 @@ function MyJobs() {
     if (stored) {
       const parsed = JSON.parse(stored);
       setUser(parsed);
-
-      fetch(`http://localhost:5000/api/my-jobs/${parsed.id}`)
+      // Use _id or id
+      const userId = parsed._id || parsed.id;
+      if (!userId) {
+        setStatus('User id not found.');
+        return;
+      }
+      fetch(`http://localhost:5000/api/my-jobs/${userId}`)
         .then(res => res.json())
-        .then(data => setJobs(data.jobs))
+        .then(data => setJobs(data.jobs || []))
         .catch(() => setStatus('❌ Could not load jobs'));
     }
   }, []);
@@ -24,6 +30,9 @@ function MyJobs() {
   const handleFeedbackClick = (job) => {
     setSelectedFeedbackJob(job);
   };
+
+  // Optional: if you decide to add a "Retract Interest" button, create a handler here.
+  // const handleRetractInterest = async (jobId) => { ... }
 
   return (
     <div>
@@ -34,35 +43,35 @@ function MyJobs() {
       ) : (
         jobs.map(job => (
           <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-            <h3>{job.title}</h3>
+            <h3>
+              <Link to={`/job/${job._id}`}>{job.title}</Link>
+            </h3>
             <p>
               <strong>Posted by:</strong>{' '}
-              <Link to={`/profile/${job.posterId._id}`}>
-                {job.posterId.username}
-              </Link>
+              <Link to={`/profile/${job.posterId._id}`}>{job.posterId.username}</Link>
             </p>
             <p>{job.description}</p>
-            {!job.feedbackSubmitted ? (
-              <button onClick={() => handleFeedbackClick(job)}>Leave Feedback</button>
+            {/* Here, you might also display a note if the sub has already applied
+                and/or a button to retract interest if desired. */}
+            {/* Example placeholder: */}
+            {job.alreadyApplied ? (
+              <div>
+                <p>You have already expressed interest.</p>
+                {/* <button onClick={() => handleRetractInterest(job._id)}>Retract Interest</button> */}
+              </div>
             ) : (
-              <p>Feedback submitted.</p>
+              <button onClick={() => handleFeedbackClick(job)}>Leave Feedback</button>
             )}
           </div>
         ))
       )}
 
-      {/* Render the feedback form modal if a job is selected */}
+      {/* Render Feedback Form if a job is selected */}
       {selectedFeedbackJob && (
         <div style={{ padding: '1rem', border: '2px solid #444', marginTop: '1rem' }}>
           <h3>Provide Feedback for: {selectedFeedbackJob.title}</h3>
-          <FeedbackForm 
-            jobId={selectedFeedbackJob._id}
-            fromUser={user.id}
-            toUser={selectedFeedbackJob.posterId._id}  // Assuming Subs leave feedback for Doms in this view
-            role={user.role}
-            // For targetInterests, you might need to pass in the interests of the counterpart
-            targetInterests={selectedFeedbackJob.posterId.interests || []}
-          />
+          {/* Render your FeedbackForm component here; adjust props as needed */}
+          {/* <FeedbackForm jobId={selectedFeedbackJob._id} fromUser={user.id} toUser={selectedFeedbackJob.posterId._id} role={user.role} targetInterests={selectedFeedbackJob.posterId.interests || []} /> */}
           <button onClick={() => setSelectedFeedbackJob(null)} style={{ marginTop: '1rem' }}>
             Close Feedback Form
           </button>

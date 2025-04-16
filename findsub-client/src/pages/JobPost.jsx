@@ -10,7 +10,7 @@ function JobPost() {
     compensation: '',
     // Removed "duration" field.
     requirements: '',
-    category: '', // Will be selected from dropdown.
+    category: '', // Selected from dropdown.
     expiresAt: '',
     startDate: '',
     startTime: '',
@@ -22,7 +22,7 @@ function JobPost() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch current user (to populate posterId later)
+  // Fetch current user from localStorage to get posterId.
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
@@ -30,11 +30,12 @@ function JobPost() {
     }
   }, []);
 
-  // Fetch available kinks from server
+  // Fetch available kinks from backend.
   useEffect(() => {
     fetch('http://localhost:5000/api/kinks')
       .then(res => res.json())
       .then(data => {
+        // Map each kink to an object for react-select.
         const options = data.kinks.map(kink => ({
           value: kink._id,
           label: kink.name,
@@ -48,18 +49,23 @@ function JobPost() {
       });
   }, []);
 
-  // Standard input change handler.
+  // Generic handler for text inputs.
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handler for required kinks dropdown.
+  // Handler for the kinks dropdown.
   const handleKinksChange = (selectedOptions) => {
     setFormData(prev => ({
       ...prev,
       requiredKinks: selectedOptions ? selectedOptions.map(option => option.value) : []
     }));
+  };
+
+  // Handler for category dropdown.
+  const handleCategoryChange = (e) => {
+    setFormData(prev => ({ ...prev, category: e.target.value }));
   };
 
   // Allowed category options.
@@ -71,14 +77,8 @@ function JobPost() {
     { value: 'Other', label: 'Other' }
   ];
 
-  // Replace free text input with a dropdown.
-  const handleCategoryChange = (e) => {
-    setFormData(prev => ({ ...prev, category: e.target.value }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Ensure posterId is added.
     if (!user) {
       setStatus('User not logged in.');
       return;
@@ -87,6 +87,9 @@ function JobPost() {
       ...formData,
       posterId: user._id || user.id
     };
+
+    // For debugging: log the jobData payload before sending.
+    console.log('JobData to submit:', jobData);
 
     try {
       const res = await fetch('http://localhost:5000/api/jobs', {
@@ -100,6 +103,7 @@ function JobPost() {
         navigate('/jobs');
       } else {
         setStatus(`Error: ${data.message}`);
+        console.error('Error from server:', data);
       }
     } catch (error) {
       console.error('Job post error:', error);
@@ -114,28 +118,28 @@ function JobPost() {
       <form onSubmit={handleSubmit}>
         <label>
           Title:<br />
-          <input
+          <input 
             type="text"
             name="title"
             value={formData.title}
             onChange={handleChange}
-            required
+            required 
           />
         </label>
         <br />
         <label>
           Description:<br />
-          <textarea
+          <textarea 
             name="description"
             value={formData.description}
             onChange={handleChange}
-            required
+            required 
           />
         </label>
         <br />
         <label>
           Location:<br />
-          <input
+          <input 
             type="text"
             name="location"
             value={formData.location}
@@ -145,7 +149,7 @@ function JobPost() {
         <br />
         <label>
           Compensation:<br />
-          <input
+          <input 
             type="text"
             name="compensation"
             value={formData.compensation}
@@ -155,7 +159,7 @@ function JobPost() {
         <br />
         <label>
           Requirements:<br />
-          <textarea
+          <textarea 
             name="requirements"
             value={formData.requirements}
             onChange={handleChange}
@@ -164,7 +168,12 @@ function JobPost() {
         <br />
         <label>
           Category:<br />
-          <select name="category" value={formData.category} onChange={handleCategoryChange} required>
+          <select 
+            name="category"
+            value={formData.category}
+            onChange={handleCategoryChange}
+            required
+          >
             <option value="">Select Category</option>
             {categoryOptions.map(option => (
               <option key={option.value} value={option.value}>{option.label}</option>
@@ -174,7 +183,7 @@ function JobPost() {
         <br />
         <label>
           Expires At:<br />
-          <input
+          <input 
             type="date"
             name="expiresAt"
             value={formData.expiresAt}
@@ -184,18 +193,18 @@ function JobPost() {
         <br />
         <label>
           Start Date:<br />
-          <input
+          <input 
             type="date"
             name="startDate"
             value={formData.startDate}
             onChange={handleChange}
-            required
+            required 
           />
         </label>
         <br />
         <label>
           Start Time:<br />
-          <input
+          <input 
             type="time"
             name="startTime"
             value={formData.startTime}
@@ -205,7 +214,7 @@ function JobPost() {
         <br />
         <label>
           Minimum Duration:<br />
-          <input
+          <input 
             type="text"
             name="minDuration"
             value={formData.minDuration}
@@ -213,7 +222,7 @@ function JobPost() {
           />
         </label>
         <br />
-        {/* New field: Required Kinks */}
+        {/* Required Kinks Dropdown */}
         <label>
           Required Kinks for Job:<br />
         </label>
