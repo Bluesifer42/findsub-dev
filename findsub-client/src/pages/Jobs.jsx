@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function Jobs() {
+  console.log("Rendering: Jobs.jsx");
+
   const [jobs, setJobs] = useState([]);
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState('');

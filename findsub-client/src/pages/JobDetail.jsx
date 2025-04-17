@@ -3,49 +3,46 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import FeedbackForm from './FeedbackForm';
 
 function JobDetail() {
+  console.log("Rendering: JobDetails.jsx");
+
   const { jobId } = useParams();
   const [job, setJob] = useState(null);
   const [feedback, setFeedback] = useState([]);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [status, setStatus] = useState('');
   const [user, setUser] = useState(null);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [applications, setApplications] = useState([]);
   const navigate = useNavigate();
 
-  // Helper function to find a human-readable kink name from a kink ID.
-  // It looks into the job's populated requiredKinks as well as
-  // the poster's and selected applicant's kinks.
   const findKinkName = (kinkId) => {
     if (job) {
-      // Check requiredKinks first.
       if (job.requiredKinks && job.requiredKinks.length > 0) {
         const match = job.requiredKinks.find(k => k._id.toString() === kinkId);
         if (match && match.name) return match.name;
       }
-      // Check poster's kinks.
-      if (job.posterId && job.posterId.kinks && job.posterId.kinks.length > 0) {
+      if (job.posterId?.kinks?.length > 0) {
         const match = job.posterId.kinks.find(entry => {
-          const id = typeof entry.kink === 'object' && entry.kink._id 
-            ? entry.kink._id.toString() 
+          const id = typeof entry.kink === 'object' && entry.kink._id
+            ? entry.kink._id.toString()
             : String(entry.kink);
           return id === kinkId;
         });
-        if (match && match.kink && match.kink.name) return match.kink.name;
+        if (match?.kink?.name) return match.kink.name;
       }
-      // Check selectedApplicant's kinks.
-      if (job.selectedApplicant && job.selectedApplicant.kinks && job.selectedApplicant.kinks.length > 0) {
+      if (job.selectedApplicant?.kinks?.length > 0) {
         const match = job.selectedApplicant.kinks.find(entry => {
-          const id = typeof entry.kink === 'object' && entry.kink._id 
-            ? entry.kink._id.toString() 
+          const id = typeof entry.kink === 'object' && entry.kink._id
+            ? entry.kink._id.toString()
             : String(entry.kink);
           return id === kinkId;
         });
-        if (match && match.kink && match.kink.name) return match.kink.name;
+        if (match?.kink?.name) return match.kink.name;
       }
     }
-    return kinkId; // fallback: show the raw ID
+    return kinkId;
   };
 
-  // Fetch job details.
   useEffect(() => {
     fetch(`http://localhost:5000/api/job/${jobId}`)
       .then(res => res.json())
@@ -56,7 +53,6 @@ function JobDetail() {
       });
   }, [jobId]);
 
-  // Fetch feedback for the job.
   useEffect(() => {
     fetch(`http://localhost:5000/api/feedback/job/${jobId}`)
       .then(res => res.json())
@@ -64,13 +60,27 @@ function JobDetail() {
       .catch(err => console.error('Feedback fetch error:', err));
   }, [jobId]);
 
-  // Load current user from localStorage.
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (stored) setUser(JSON.parse(stored));
-  }, []);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setUser(parsed);
 
-  // Handler: Apply for a job (for Subs).
+      // Check if user has applied
+      fetch(`http://localhost:5000/api/applications/${jobId}`)
+        .then(res => res.json())
+        .then(data => {
+          const applied = data.applications.some(app => app.applicantId._id === parsed.id);
+          setHasApplied(applied);
+
+          if (parsed.role === 'Dom') {
+            setApplications(data.applications);
+          }
+        })
+        .catch(err => console.error('Application check error:', err));
+    }
+  }, [jobId]);
+
   const handleApply = async () => {
     const confirmed = window.confirm('Do you want to apply for this job?');
     if (!confirmed) return;
@@ -89,6 +99,7 @@ function JobDetail() {
       const data = await res.json();
       if (res.ok) {
         alert('✅ Application submitted!');
+        setHasApplied(true);
       } else {
         alert(`❌ ${data.message}`);
       }
@@ -98,7 +109,26 @@ function JobDetail() {
     }
   };
 
-  // Handler: Delete a job.
+  const handleRetract = async () => {
+    const confirmed = window.confirm('Are you sure you want to retract your application?');
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/apply/${job._id}/${user.id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('✅ Application retracted.');
+        setHasApplied(false);
+      } else {
+        alert(`❌ ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Retract error:', error);
+      alert('Failed to retract interest.');
+    }
+  };
+
   const handleDeleteJob = async () => {
     const confirmDelete = window.confirm('Are you sure you want to permanently delete this job?');
     if (!confirmDelete) return;
@@ -113,7 +143,6 @@ function JobDetail() {
     }
   };
 
-  // Handler: Update job status.
   const handleUpdateStatus = async (newStatus) => {
     const confirmStatus = window.confirm(`Are you sure you want to mark this job as ${newStatus}?`);
     if (!confirmStatus) return;
@@ -132,7 +161,6 @@ function JobDetail() {
     }
   };
 
-  // Handler: Show feedback form.
   const handleFeedbackClick = () => {
     if (!job.selectedApplicant) {
       alert('Feedback is not available until an applicant is selected.');
@@ -141,49 +169,59 @@ function JobDetail() {
     setShowFeedbackForm(true);
   };
 
+  const handleSelectApplicant = async (applicantId) => {
+    const confirm = window.confirm('Select this Sub for the job? This cannot be undone.');
+    if (!confirm) return;
+
+    try {
+      const res = await fetch('http://localhost:5000/api/jobs/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, applicantId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('✅ Sub selected!');
+        window.location.reload();
+      } else {
+        alert(`❌ ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Select error:', error);
+      alert('Failed to select Sub.');
+    }
+  };
+
   if (status) return <p>{status}</p>;
   if (!job) return <p>Loading job details...</p>;
 
   return (
     <div>
-      {/* Job Title always clickable */}
-      <h2>
-        <Link to={`/job/${job._id}`}>{job.title}</Link>
-      </h2>
+      <h2><Link to={`/job/${job._id}`}>{job.title}</Link></h2>
       <p><strong>Description:</strong> {job.description}</p>
       <p><strong>Location:</strong> {job.location}</p>
       <p><strong>Compensation:</strong> {job.compensation}</p>
       {job.requirements && <p><strong>Requirements:</strong> {job.requirements}</p>}
       {job.category && <p><strong>Category:</strong> {job.category}</p>}
-      {job.requiredKinks && job.requiredKinks.length > 0 && (
+      {job.requiredKinks?.length > 0 && (
         <div>
           <strong>Required Kinks:</strong>
           <ul>
             {job.requiredKinks.map((kink) => (
               <li key={kink._id}>
                 {kink.name}
-                {kink.description && (
-                  <span style={{ fontSize: '0.8em', color: '#666' }}>
-                    {' '}– {kink.description}
-                  </span>
-                )}
+                {kink.description && <span style={{ fontSize: '0.8em', color: '#666' }}> – {kink.description}</span>}
               </li>
             ))}
           </ul>
         </div>
       )}
       {job.expiresAt && (
-        <p>
-          <strong>Expires:</strong> {new Date(job.expiresAt).toLocaleDateString()}
-        </p>
+        <p><strong>Expires:</strong> {new Date(job.expiresAt).toLocaleDateString()}</p>
       )}
       <p><strong>Status:</strong> {job.status}</p>
-      <p>
-        <strong>Posted by:</strong>{' '}
-        <Link to={`/profile/${job.posterId._id}`}>{job.posterId.username}</Link>
-      </p>
+      <p><strong>Posted by:</strong> <Link to={`/profile/${job.posterId._id}`}>{job.posterId.username}</Link></p>
 
-      {/* Action Buttons */}
       <div style={{ marginTop: '1rem' }}>
         {user && user.role === 'Dom' && (user._id === job.posterId._id || user.id === job.posterId._id) && (
           <div>
@@ -202,7 +240,14 @@ function JobDetail() {
         )}
 
         {user && user.role === 'Sub' && job.status === 'open' && (
-          <button onClick={handleApply}>Apply / Express Interest</button>
+          hasApplied ? (
+            <>
+              <p style={{ color: 'green', marginTop: '1em' }}>✅ You’ve applied for this job.</p>
+              <button onClick={handleRetract}>Retract Interest</button>
+            </>
+          ) : (
+            <button onClick={handleApply}>Apply / Express Interest</button>
+          )
         )}
 
         {user && user.role === 'Sub' && job.status === 'completed' && (
@@ -218,10 +263,8 @@ function JobDetail() {
         ) : (
           feedback.map(f => (
             <div key={f._id} style={{ borderBottom: '1px solid #ccc', padding: '0.5rem 0' }}>
-              <p>
-                <strong>From:</strong> {f.fromUser.username} ({f.fromUser.role})
-              </p>
-              {f.generalRatings && typeof f.generalRatings === 'object' && (
+              <p><strong>From:</strong> {f.fromUser.username} ({f.fromUser.role})</p>
+              {f.generalRatings && (
                 <>
                   <p><strong>General Ratings:</strong></p>
                   <ul>
@@ -231,14 +274,12 @@ function JobDetail() {
                   </ul>
                 </>
               )}
-              {f.interestRatings && typeof f.interestRatings === 'object' && (
+              {f.interestRatings && (
                 <>
                   <p><strong>Interest Ratings:</strong></p>
                   <ul>
                     {Object.entries(f.interestRatings).map(([kinkId, ratingVal]) => (
-                      <li key={kinkId}>
-                        {findKinkName(kinkId)}: {ratingVal} / 5
-                      </li>
+                      <li key={kinkId}>{findKinkName(kinkId)}: {ratingVal} / 5</li>
                     ))}
                   </ul>
                 </>
@@ -246,17 +287,43 @@ function JobDetail() {
               {typeof f.honestyScore !== 'undefined' && (
                 <p><strong>Honesty Score:</strong> {f.honestyScore} / 5</p>
               )}
-              {f.comment && (
-                <p><strong>Comment:</strong> {f.comment}</p>
-              )}
+              {f.comment && <p><strong>Comment:</strong> {f.comment}</p>}
             </div>
           ))
         )}
       </div>
 
+      {user && user.role === 'Dom' && (user._id === job.posterId._id || user.id === job.posterId._id) && (
+        <div style={{ marginTop: '2rem' }}>
+          <h3>Applicants</h3>
+          {applications.length === 0 ? (
+            <p>No applicants yet.</p>
+          ) : (
+            applications.map(app => (
+              <div key={app._id} style={{ border: '1px solid #ddd', padding: '1rem', marginBottom: '1rem' }}>
+                <p><strong>Username:</strong> {app.applicantId.username}</p>
+                <p><strong>Role:</strong> {app.applicantId.role}</p>
+                <p><strong>Experience:</strong> {app.applicantId.experienceLevel}</p>
+                {app.coverLetter && (
+                  <p><strong>Cover Letter:</strong> {app.coverLetter}</p>
+                )}
+                {!job.selectedApplicant && (
+                  <button onClick={() => handleSelectApplicant(app.applicantId._id)}>
+                    ✅ Select This Sub
+                  </button>
+                )}
+                {job.selectedApplicant?._id === app.applicantId._id && (
+                  <p style={{ color: 'green' }}>✅ This Sub has been selected.</p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {showFeedbackForm && (
         <div style={{ marginTop: '2rem' }}>
-          <FeedbackForm 
+          <FeedbackForm
             jobId={job._id}
             fromUser={user.id}
             toUser={job.selectedApplicant}

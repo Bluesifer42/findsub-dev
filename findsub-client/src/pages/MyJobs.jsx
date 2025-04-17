@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 // import FeedbackForm from './FeedbackForm';
 
 function MyJobs() {
+  console.log("Rendering: MyJobs.jsx");
+
   const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [status, setStatus] = useState('');

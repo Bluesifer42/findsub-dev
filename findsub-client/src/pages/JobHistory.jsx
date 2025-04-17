@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function JobHistory() {
+  console.log("Rendering: JobHistory.jsx");
+
   const [jobs, setJobs] = useState([]);
   const [status, setStatus] = useState('');
   const [user, setUser] = useState(null);

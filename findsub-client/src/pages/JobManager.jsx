@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import FeedbackForm from './FeedbackForm';
 
 function JobManager() {
+  console.log("Rendering: JobManager.jsx");
+
   const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -91,7 +93,9 @@ function JobManager() {
 
       {jobs.map((job) => (
         <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-          <h3>{job.title}</h3>
+          <h3>
+  <Link to={`/job/${job._id}`}>{job.title}</Link>
+</h3>
           <p>{job.description}</p>
           <p><strong>Status:</strong> {job.status}</p>
           <p><strong>Category:</strong> {job.category}</p>
