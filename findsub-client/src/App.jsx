@@ -1,26 +1,31 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+
+// General pages
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Jobs from './pages/Jobs';
 import Messages from './pages/Messages';
 import Profile from './pages/Profile';
-import DashboardDom from './pages/DashboardDom';
-import DashboardSub from './pages/DashboardSub';
-import DashboardSwitch from './pages/DashboardSwitch';
-import Register from './pages/Register';
-import JobPost from './pages/JobPost';
-import JobManager from './pages/JobManager';
-import MyJobs from './pages/MyJobs';
 import PublicProfile from './pages/PublicProfile';
 import UserDirectory from './pages/UserDirectory';
 import JobsHub from './pages/JobsHub';
-import JobDetail from './pages/JobDetail';  // NEW: Import JobDetail page
+import JobDetail from './pages/JobDetail';
+
+// Role dashboards
+import DashboardDom from './pages/DashboardDom';
+import DashboardSub from './pages/DashboardSub';
+import DashboardSwitch from './pages/DashboardSwitch';
+
+// NEW: Dom-only job posting page
+import DomJobPost from './pages/DomJobPost';
 
 function App() {
   return (
     <Router>
       <div className="app-container">
+
+        {/* Header */}
         <header className="header">
           <h1 style={{ flex: 1 }}>FindSub</h1>
           <div className="user-info">
@@ -43,26 +48,34 @@ function App() {
           </div>
         </header>
 
+        {/* Main Content Area */}
         <main className="main-content">
           <Routes>
+            {/* Core auth routes */}
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/Dashboard" element={<Dashboard />} />
-            <Route path="/Jobs" element={<JobsHub />} />
-            <Route path="/Messages" element={<Messages />} />
-            <Route path="/Profile" element={<Profile />} />
+
+            {/* Role dashboards */}
             <Route path="/dashboard/dom" element={<DashboardDom />} />
             <Route path="/dashboard/sub" element={<DashboardSub />} />
             <Route path="/dashboard/switch" element={<DashboardSwitch />} />
+
+            {/* Main job system */}
+            <Route path="/jobs" element={<JobsHub />} />
+            <Route path="/job/:jobId" element={<JobDetail />} />
+            <Route path="/jobs/edit/:jobId" element={<DomJobPost />} /> {/* ← Corrected route */}
+
+            {/* Messaging and profiles */}
+            <Route path="/Messages" element={<Messages />} />
+            <Route path="/Profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/users" element={<UserDirectory />} />
-            <Route path="/jobs/edit/:jobId" element={<JobPost />} />
-            <Route path="/job/:jobId" element={<JobDetail />} /> {/* NEW: Job Detail Route */}
-            {/* You can also add routes for JobManager and MyJobs if needed */}
           </Routes>
         </main>
 
+        {/* Sidebar */}
         <aside className="sidebar">
           <button className="collapse-btn">☰</button>
           <nav>
@@ -85,6 +98,7 @@ function App() {
           </nav>
         </aside>
 
+        {/* Footer */}
         <footer className="footer">
           <p>&copy; 2025 FindSub. All rights reserved.</p>
         </footer>

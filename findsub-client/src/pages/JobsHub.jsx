@@ -1,75 +1,47 @@
-// src/pages/JobsHub.jsx
 import { useEffect, useState } from 'react';
 import Jobs from './Jobs';
-import JobPost from './JobPost';
-import JobManager from './JobManager';        // Used for dom's "My Listing"
-import MyJobs from './MyJobs';                // Active jobs for subs and doms
-import AwaitingFeedback from './AwaitingFeedback';
-import JobHistory from './JobHistory';
+import DomJobListings from './DomJobListings';
+import DomActiveJobs from './DomActiveJobs';
+import SubAcceptedJobs from './SubAcceptedJobs';
+import DomJobHistory from './DomJobHistory';
+import SubJobHistory from './SubJobHistory';
+import DomJobPost from './DomJobPost';
 
 function JobsHub() {
-  const [tab, setTab] = useState('');
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('board');
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
-      const parsed = JSON.parse(stored);
-      setUser(parsed);
-      // For doms, default to the "Post Job" tab; for subs, default to "Jobs Board".
-      setTab(parsed.role === 'Dom' ? 'post' : 'board');
+      setUser(JSON.parse(stored));
     }
   }, []);
 
-  if (!user) return <p>Please log in to access jobs.</p>;
+  if (!user) return <p>Loading user...</p>;
 
   const isDom = user.role === 'Dom';
   const isSub = user.role === 'Sub';
-  const isSwitch = user.role === 'Switch';
-
-  // Define tabs for doms and subs.
-  const domTabs = [
-    { key: 'post', label: 'Post Job' },
-    { key: 'listing', label: 'My Listing' },
-    { key: 'board', label: 'Jobs Board' },
-    { key: 'active', label: 'Active Jobs' },
-    { key: 'awaiting', label: 'Awaiting Feedback' },
-    { key: 'history', label: 'Job History' }
-  ];
-
-  const subTabs = [
-    { key: 'board', label: 'Jobs Board' },
-    { key: 'active', label: 'Active Jobs' },
-    { key: 'awaiting', label: 'Awaiting Feedback' },
-    { key: 'history', label: 'Job History' }
-  ];
-
-  const tabs = isDom ? domTabs : subTabs;
-
-  const showTab = (key, label) => (
-    <button
-      key={key}
-      onClick={() => setTab(key)}
-      style={{ padding: '0.5rem 1rem', marginRight: '0.5rem' }}
-    >
-      {label}
-    </button>
-  );
 
   return (
     <div>
-      <h2>Jobs</h2>
-      <div style={{ marginBottom: '1rem' }}>
-        {tabs.map(tabObj => showTab(tabObj.key, tabObj.label))}
+      <h1>Jobs Portal</h1>
+
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+        <button onClick={() => setActiveTab('board')}>Job Board</button>
+        <button onClick={() => setActiveTab('active')}>Active Jobs</button>
+        <button onClick={() => setActiveTab('history')}>Job History</button>
+        {isDom && <button onClick={() => setActiveTab('listings')}>My Listings</button>}
+        {isDom && <button onClick={() => setActiveTab('post')}>Post Job</button>}
       </div>
 
-      {/* Render active tab content based on the selected tab */}
-      {isDom && tab === 'post' && <JobPost />}
-      {isDom && tab === 'listing' && <JobManager />}
-      {tab === 'board' && <Jobs />}
-      {tab === 'active' && <MyJobs />}
-      {tab === 'awaiting' && <AwaitingFeedback />}
-      {tab === 'history' && <JobHistory />}
+      {activeTab === 'board' && <Jobs />}
+      {activeTab === 'active' && isDom && <DomActiveJobs />}
+      {activeTab === 'active' && isSub && <SubAcceptedJobs />}
+      {activeTab === 'history' && isDom && <DomJobHistory />}
+      {activeTab === 'history' && isSub && <SubJobHistory />}
+      {activeTab === 'listings' && isDom && <DomJobListings />}
+      {activeTab === 'post' && isDom && <DomJobPost />}
     </div>
   );
 }

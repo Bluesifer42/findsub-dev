@@ -1,0 +1,75 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+function MyJobs() {
+  console.log("Rendering: MyJobs.jsx");
+
+  const [user, setUser] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setUser(parsed);
+
+      const userId = parsed._id || parsed.id;
+      if (!userId) {
+        setStatus('User id not found.');
+        return;
+      }
+
+      fetch(`http://localhost:5000/api/my-jobs/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          const allJobs = data.jobs || [];
+
+          // Sub: jobs where they were selected
+          if (parsed.role === 'Sub') {
+            setJobs(allJobs);
+          }
+
+          // Dom: show filled jobs that aren't completed yet
+          if (parsed.role === 'Dom') {
+            const activePosted = allJobs.filter(job =>
+              job.posterId._id === parsed.id &&
+              job.status === 'filled' &&
+              job.completedOn == null
+            );
+            setJobs(activePosted);
+          }
+        })
+        .catch(() => setStatus('❌ Could not load jobs'));
+    }
+  }, []);
+
+  return (
+    <div>
+      <h2>{user?.role === 'Dom' ? 'Active Jobs (Filled)' : 'My Accepted Jobs'}</h2>
+
+      {status && <p>{status}</p>}
+
+      {jobs.length === 0 ? (
+        <p>No jobs found.</p>
+      ) : (
+        jobs.map(job => (
+          <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
+            <h3><Link to={`/job/${job._id}`}>{job.title}</Link></h3>
+            <p>{job.description}</p>
+            <p>
+              <strong>Posted by:</strong>{' '}
+              <Link to={`/profile/${job.posterId._id}`}>{job.posterId.username}</Link>
+            </p>
+            <p><strong>Status:</strong> {job.status}</p>
+            {user?.role === 'Sub' && (
+              <button onClick={() => alert('Feedback logic goes here.')}>Leave Feedback</button>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+export default MyJobs;
