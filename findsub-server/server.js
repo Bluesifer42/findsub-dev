@@ -111,15 +111,28 @@ app.post('/api/jobs/status', async (req, res) => {
     if (!job) return res.status(404).json({ message: 'Job not found' });
 
     job.status = newStatus;
-    if (['completed', 'failed'].includes(newStatus)) {
-      job.isEditable = false;
+
+    if (newStatus === 'cancelled') {
+      job.isEditable = true;
+      job.selectedApplicant = null;
+      job.isFilled = false;
+      job.fulfilledOn = null;
+      job.completedOn = null;
+    }
+
+    if (newStatus === 'completed') {
+      job.completedOn = new Date();
+    }
+
+    if (newStatus === 'failed') {
+      job.completedOn = new Date(); // You can track failure dates too
     }
 
     await job.save();
-    res.json({ message: `Job marked as ${newStatus}.` });
+    res.json({ message: `Job marked as ${newStatus}` });
   } catch (error) {
-    console.error('Job status update error:', error);
-    res.status(500).json({ message: 'Failed to update job status.' });
+    console.error('Error updating job status:', error);
+    res.status(500).json({ message: 'Failed to update job status' });
   }
 });
 
