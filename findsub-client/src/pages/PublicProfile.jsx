@@ -1,113 +1,111 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 
 function PublicProfile() {
   const { userId } = useParams();
+  const [user, setUser] = useState(null);
   const [feedback, setFeedback] = useState([]);
-  const [userMeta, setUserMeta] = useState({});
-  const [generalAvg, setGeneralAvg] = useState(null);
-  const [kinkAvg, setKinkAvg] = useState({});
+  const [ratingAverages, setRatingAverages] = useState({});
+  const [badgeSummary, setBadgeSummary] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch feedback for the user (as recipient)
+    // Load user info
+    fetch(`http://localhost:5000/api/user/${userId}`)
+      .then(res => res.json())
+      .then(data => setUser(data.user))
+      .catch(err => console.error('User load error:', err));
+
+    // Load feedback
     fetch(`http://localhost:5000/api/feedback/user/${userId}`)
       .then(res => res.json())
       .then(data => {
-        setFeedback(data.feedback);
-        if (data.feedback.length > 0) {
-          // Calculate general average ratings from the generalRatings field.
-          const generalRatings = data.feedback
-            .filter(f => f.generalRatings && typeof f.generalRatings === 'object')
-            .map(f => {
-              const values = Object.values(f.generalRatings).map(v => Number(v));
-              return values.reduce((a, b) => a + b, 0) / values.length;
-            });
-          if (generalRatings.length > 0) {
-            const avg = generalRatings.reduce((a, b) => a + b, 0) / generalRatings.length;
-            setGeneralAvg(avg.toFixed(1));
-          }
-
-          // Calculate average ratings for each kink from the interestRatings field.
-          const ratingSums = {};
-          const ratingCounts = {};
-          data.feedback.forEach(f => {
-            if (f.interestRatings && typeof f.interestRatings === 'object') {
-              Object.entries(f.interestRatings).forEach(([kink, rating]) => {
-                if (rating !== null && !isNaN(Number(rating))) {
-                  ratingSums[kink] = (ratingSums[kink] || 0) + Number(rating);
-                  ratingCounts[kink] = (ratingCounts[kink] || 0) + 1;
-                }
-              });
-            }
-          });
-          const kinkAverages = {};
-          Object.keys(ratingSums).forEach(kink => {
-            kinkAverages[kink] = (ratingSums[kink] / ratingCounts[kink]).toFixed(1);
-          });
-          setKinkAvg(kinkAverages);
-        }
+        const fb = data.feedback;
+        setFeedback(fb);
+        processRatings(fb);
+        processBadges(fb);
+        setLoading(false);
       })
       .catch(err => {
-        console.error('Feedback fetch error:', err);
+        console.error('Feedback load error:', err);
+        setLoading(false);
       });
-
-    // Fetch basic user info
-    fetch(`http://localhost:5000/api/user/${userId}`)
-      .then(res => res.json())
-      .then(data => setUserMeta(data.user))
-      .catch(() => setUserMeta({}));
   }, [userId]);
 
+  const processRatings = (feedbackArray) => {
+    const tally = {};
+    const counts = {};
+    feedbackArray.forEach(f => {
+      if (f.generalRatings) {
+        for (let key in f.generalRatings) {
+          tally[key] = (tally[key] || 0) + f.generalRatings[key];
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      }
+    });
+    const avg = {};
+    for (let key in tally) {
+      avg[key] = (tally[key] / counts[key]).toFixed(1);
+    }
+    setRatingAverages(avg);
+  };
+
+  const processBadges = (feedbackArray) => {
+    const summary = {};
+    feedbackArray.forEach(f => {
+      if (f.badgeGifting) {
+        for (let kinkId in f.badgeGifting) {
+          summary[kinkId] = (summary[kinkId] || 0) + f.badgeGifting[kinkId];
+        }
+      }
+    });
+    setBadgeSummary(summary);
+  };
+
+  if (loading) return <p>Loading profile...</p>;
+  if (!user) return <p>User not found.</p>;
+
   return (
-    <div>
-      <h2>Public Profile</h2>
-      <p><strong>Username:</strong> {userMeta?.username}</p>
-      <p><strong>Role:</strong> {userMeta?.role}</p>
-      <p><strong>Reputation Score:</strong> {userMeta?.reputationScore ? `${userMeta.reputationScore} / 5` : 'No ratings yet'}</p>
-      {generalAvg && (
-        <p><strong>General Average Rating:</strong> {generalAvg} / 5</p>
-      )}
-      <h3>Average Kink Ratings</h3>
-      {Object.keys(kinkAvg).length === 0 ? (
-        <p>No kink ratings available.</p>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <h2>{user.username}'s Profile</h2>
+      <p><strong>Role:</strong> {user.role}</p>
+      <p><strong>Experience:</strong> {user.experienceLevel}</p>
+
+      <h3>Trust & Performance</h3>
+      {Object.keys(ratingAverages).length === 0 ? (
+        <p>No ratings yet.</p>
       ) : (
         <ul>
-          {Object.entries(kinkAvg).map(([kink, avg]) => (
-            <li key={kink}>{kink}: {avg} / 5</li>
+          {Object.entries(ratingAverages).map(([trait, avg]) => (
+            <li key={trait}><strong>{trait}:</strong> {avg} / 5</li>
           ))}
         </ul>
       )}
+
+      {Object.keys(badgeSummary).length > 0 && (
+        <>
+          <h3>Kink Badges Earned</h3>
+          <ul>
+            {Object.entries(badgeSummary).map(([kinkId, count]) => (
+              <li key={kinkId}>
+                <strong>Kink {kinkId}:</strong> {count} badge{count > 1 ? 's' : ''}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <h3>Feedback Received</h3>
       {feedback.length === 0 ? (
-        <p>No feedback available.</p>
+        <p>No feedback yet.</p>
       ) : (
-        feedback.map(f => (
-          <div key={f._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-            <p><strong>From:</strong> {f.fromUser.username} ({f.fromUser.role})</p>
-            {f.generalRatings && typeof f.generalRatings === 'object' && (
-              <>
-                <p><strong>General Ratings:</strong></p>
-                <ul>
-                  {Object.entries(f.generalRatings).map(([key, value]) => (
-                    <li key={key}>{key}: {value} / 5</li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {f.interestRatings && typeof f.interestRatings === 'object' && (
-              <>
-                <p><strong>Interest Ratings:</strong></p>
-                <ul>
-                  {Object.entries(f.interestRatings).map(([key, value]) => (
-                    <li key={key}>{key}: {value !== null ? `${value} / 5` : 'N/A'}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {typeof f.honestyScore !== 'undefined' && (
-              <p><strong>Honesty Score:</strong> {f.honestyScore} / 5</p>
-            )}
-            {f.comment && <p><strong>Comment:</strong> {f.comment}</p>}
+        feedback.map((f, i) => (
+          <div key={i} style={{ borderBottom: '1px solid #ccc', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
+            <p>
+              From: <Link to={`/profile/${f.fromUser._id}`}>{f.fromUser.username}</Link> ({f.fromUser.role})
+            </p>
+            {f.comment && <p><em>"{f.comment}"</em></p>}
+            {f.honestyScore && <p>Honesty: {f.honestyScore}/5</p>}
           </div>
         ))
       )}

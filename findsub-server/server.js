@@ -268,6 +268,27 @@ app.get('/api/jobs/history/:userId', async (req, res) => {
   }
 });
 
+
+/** - ADMIN ONLY
+ * Delete User 
+ * Deletes the selected user
+ */
+app.delete('/api/admin/delete-user/:userId', async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    await Application.deleteMany({ applicantId: req.params.userId });
+    await Feedback.deleteMany({ $or: [{ fromUser: req.params.userId }, { toUser: req.params.userId }] });
+    res.json({ message: 'User deleted', username: user.username });
+  } catch (err) {
+    console.error('Admin user delete error:', err);
+    res.status(500).json({ message: 'Failed to delete user.' });
+  }
+});
+
+
+
 /**
  * Fetch Jobs
  * Retrieves jobs for public view or for a particular poster.

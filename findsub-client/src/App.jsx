@@ -21,6 +21,11 @@ import DashboardSwitch from './pages/DashboardSwitch';
 // 🛠️ Dom-only job posting/editing page
 import DomJobPost from './pages/DomJobPost';
 
+// Admin-only
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+
+
 function App() {
   const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
 
@@ -79,6 +84,11 @@ function App() {
 
             {/* 🧭 Feedback Page */}
             <Route path="/feedback/:jobId/:toUserId" element={<FeedbackForm />} />
+
+            {/* 🔐 Admin-only */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+
           </Routes>
         </main>
 
