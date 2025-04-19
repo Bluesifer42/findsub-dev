@@ -1,47 +1,63 @@
 const mongoose = require('mongoose');
 
 const JobSchema = new mongoose.Schema({
-  posterId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  location: { type: String, default: 'Online' },
-  compensation: { type: String, default: 'Unpaid' },
-  // Removed "duration" field per earlier changes.
-  requirements: { type: String },
-
-  // Updated category enum to match your requirements.
-  category: {
-    type: String,
-    enum: [
-      'Domestic Servitude',
-      'Footwear Cleaning',
-      'Worship Sessions',
-      'Meal Prep Service',
-      'Other'
-    ],
-    default: 'Other'
+  posterId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  requiredKinks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Kink' }],
+  title: String,
+  description: String,
+  location: String,
+  compensation: String,
+  requirements: String,
+  category: String,
 
-  startDate: { type: Date, required: true },
-  startTime: { type: String }, // e.g., "14:00"
-  minDuration: { type: String }, // e.g., "2 hours"
+  requiredKinks: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Kink'
+  }],
 
-  createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date },
+  startDate: Date,
+  startTime: String,
+  minDuration: String,
+  expiresAt: Date,
 
-  selectedApplicant: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  isFilled: { type: Boolean, default: false },
-  fulfilledOn: { type: Date, default: null },   // When the job was accepted
-  completedOn: { type: Date, default: null },   // Optional – when both feedback is received
-
+  // Fulfillment fields
+  selectedApplicant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  isFilled: {
+    type: Boolean,
+    default: false
+  },
+  fulfilledOn: Date,
+  completedOn: Date,
   status: {
     type: String,
     enum: ['open', 'filled', 'completed', 'failed', 'cancelled'],
     default: 'open'
   },
 
-  isEditable: { type: Boolean, default: true }
+  // Editable flag for Doms (can relist/cancel)
+  isEditable: {
+    type: Boolean,
+    default: true
+  },
+
+  // NEW: Feedback tracking flags
+  subFeedbackLeft: {
+    type: Boolean,
+    default: false
+  },
+  domFeedbackLeft: {
+    type: Boolean,
+    default: false
+  }
+
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Job', JobSchema);

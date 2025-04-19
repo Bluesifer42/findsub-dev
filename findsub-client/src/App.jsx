@@ -1,7 +1,7 @@
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
-// General pages
+// 🧭 General pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -12,15 +12,17 @@ import UserDirectory from './pages/UserDirectory';
 import JobsHub from './pages/JobsHub';
 import JobDetail from './pages/JobDetail';
 
-// Role dashboards
+// 🧭 Role-specific dashboards
 import DashboardDom from './pages/DashboardDom';
 import DashboardSub from './pages/DashboardSub';
 import DashboardSwitch from './pages/DashboardSwitch';
 
-// NEW: Dom-only job posting page
+// 🛠️ Dom-only job posting/editing page
 import DomJobPost from './pages/DomJobPost';
 
 function App() {
+  const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+
   return (
     <Router>
       <div className="app-container">
@@ -29,9 +31,9 @@ function App() {
         <header className="header">
           <h1 style={{ flex: 1 }}>FindSub</h1>
           <div className="user-info">
-            {localStorage.getItem('user') ? (
+            {user ? (
               <>
-                <span>{JSON.parse(localStorage.getItem('user')).username}</span>
+                <span>{user.username}</span>
                 <button
                   className="logout-btn"
                   onClick={() => {
@@ -48,44 +50,42 @@ function App() {
           </div>
         </header>
 
-        {/* Main Content Area */}
+        {/* Main view (routing area) */}
         <main className="main-content">
           <Routes>
-            {/* Core auth routes */}
+
+            {/* 🔐 Auth & registration */}
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/Dashboard" element={<Dashboard />} />
 
-            {/* Role dashboards */}
+            {/* 🧭 Role dashboards */}
             <Route path="/dashboard/dom" element={<DashboardDom />} />
             <Route path="/dashboard/sub" element={<DashboardSub />} />
             <Route path="/dashboard/switch" element={<DashboardSwitch />} />
 
-            {/* Main job system */}
+            {/* 📦 Main job system */}
             <Route path="/jobs" element={<JobsHub />} />
             <Route path="/job/:jobId" element={<JobDetail />} />
-            <Route path="/jobs/edit/:jobId" element={<DomJobPost />} /> {/* ← Corrected route */}
+            <Route path="/jobs/edit/:jobId" element={<DomJobPost />} />
 
-            {/* Messaging and profiles */}
+            {/* ✉️ Messaging and profiles */}
             <Route path="/Messages" element={<Messages />} />
             <Route path="/Profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/users" element={<UserDirectory />} />
+
           </Routes>
         </main>
 
-        {/* Sidebar */}
+        {/* Sidebar navigation */}
         <aside className="sidebar">
           <button className="collapse-btn">☰</button>
           <nav>
             <ul>
               <li>
-                <Link to={
-                  localStorage.getItem('user')
-                    ? `/dashboard/${JSON.parse(localStorage.getItem('user')).role.toLowerCase()}`
-                    : '/login'
-                }>
+                <Link to={user ? `/dashboard/${user.role.toLowerCase()}` : '/login'}>
                   Dashboard
                 </Link>
               </li>

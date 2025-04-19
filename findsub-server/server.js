@@ -414,7 +414,7 @@ app.get('/api/jobs/awaiting-feedback/:userId', async (req, res) => {
 
 /**
  * New Feedback Endpoint
- * Accepts detailed feedback submissions. For Dom feedback, includes interestRatings and badgeGifting.
+ * Accepts detailed feedback submissions. Updates user rep and sets feedback flags.
  */
 app.post('/api/feedback/new', async (req, res) => {
   try {
@@ -423,17 +423,19 @@ app.post('/api/feedback/new', async (req, res) => {
       fromUser,
       toUser,
       generalRatings,
-      interestRatings,  // e.g., { "kinkID1": 4, "kinkID2": 5 }
-      badgeGifting,     // e.g., { "kinkID1": 2, "kinkID2": 1 }
+      interestRatings,
+      badgeGifting,
       honestyScore,
       comment
     } = req.body;
 
+    // Prevent duplicate feedback
     const existing = await Feedback.findOne({ jobId, fromUser });
     if (existing) {
       return res.status(400).json({ message: 'Feedback already submitted for this job.' });
     }
 
+    // Create and save feedback
     const feedback = new Feedback({
       jobId,
       fromUser,
@@ -446,12 +448,26 @@ app.post('/api/feedback/new', async (req, res) => {
     });
 
     await feedback.save();
+
+    // Update recipient's rep score
     await updateUserReputation(toUser);
 
+    // Optionally update trust score if method exists
     const recipient = await User.findById(toUser);
     if (recipient && typeof recipient.recalculateTrustScore === 'function') {
       recipient.recalculateTrustScore();
       await recipient.save();
+    }
+
+    // NEW: Update feedback flags in Job
+    const job = await Job.findById(jobId);
+    if (job) {
+      if (String(job.selectedApplicant) === String(fromUser)) {
+        job.subFeedbackLeft = true;
+      } else if (String(job.posterId) === String(fromUser)) {
+        job.domFeedbackLeft = true;
+      }
+      await job.save();
     }
 
     res.status(201).json({ message: 'Feedback submitted successfully.' });
