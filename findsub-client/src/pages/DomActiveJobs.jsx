@@ -33,9 +33,9 @@ function DomActiveJobs() {
       .catch(() => setStatus('❌ Failed to load active jobs.'));
   }, []);
 
-  const handleLeaveFeedback = (jobId) => {
-    navigate(`/job/${jobId}`); // Or navigate to a specific feedback form
-  };
+  const handleLeaveFeedback = (job) => {
+    navigate(`/feedback/${job._id}/${job.selectedApplicant._id}`);
+  };  
 
   return (
     <div>
@@ -53,7 +53,7 @@ function DomActiveJobs() {
             <p><strong>Status:</strong> {job.status}</p>
 
             {job.status === 'completed' && job.domFeedbackLeft === false ? (
-              <button onClick={() => handleLeaveFeedback(job._id)}>Leave Feedback</button>
+              <button onClick={() => handleLeaveFeedback(job)}>Leave Feedback</button>
             ) : job.status === 'completed' && job.domFeedbackLeft === true ? (
               <p><em>✅ Feedback Submitted</em></p>
             ) : null}

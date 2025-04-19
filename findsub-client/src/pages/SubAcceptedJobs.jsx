@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function SubAcceptedJobs() {
-  const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [user, setUser] = useState(null);
   const [status, setStatus] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -13,39 +14,44 @@ function SubAcceptedJobs() {
     const parsed = JSON.parse(stored);
     setUser(parsed);
 
-    const userId = parsed._id || parsed.id;
-    if (!userId || parsed.role !== 'Sub') return;
-
-    fetch(`http://localhost:5000/api/my-jobs/${userId}`)
+    fetch(`http://localhost:5000/api/my-jobs/${parsed._id}`)
       .then(res => res.json())
       .then(data => {
-        const active = (data.jobs || []).filter(job =>
-          job.status === 'filled' &&
-          job.completedOn == null &&
-          job.selectedApplicant?._id === userId
+        const activeJobs = data.jobs.filter(job =>
+          (
+            job.status === 'filled' ||
+            (job.status === 'completed' && job.subFeedbackLeft === false)
+          )
         );
-        setJobs(active);
+        setJobs(activeJobs);
       })
-      .catch(() => setStatus('❌ Failed to load accepted jobs.'));
+      .catch(() => setStatus('❌ Failed to load your jobs.'));
   }, []);
+
+  const handleFeedback = (jobId, toUserId) => {
+    navigate(`/feedback/${jobId}/${toUserId}`);
+  };
 
   return (
     <div>
-      <h2>Accepted Jobs</h2>
+      <h2>Your Active Jobs</h2>
       {status && <p>{status}</p>}
-
       {jobs.length === 0 ? (
-        <p>You haven’t been selected for any active jobs yet.</p>
+        <p>No active jobs at the moment.</p>
       ) : (
         jobs.map(job => (
           <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
             <h3><Link to={`/job/${job._id}`}>{job.title}</Link></h3>
-            <p>{job.description}</p>
-            <p>
-              <strong>Posted by:</strong>{' '}
-              <Link to={`/profile/${job.posterId._id}`}>{job.posterId.username}</Link>
-            </p>
+            <p><strong>Posted By:</strong> {job.posterId?.username}</p>
             <p><strong>Status:</strong> {job.status}</p>
+
+            {job.status === 'completed' && job.subFeedbackLeft === false ? (
+              <button onClick={() => handleFeedback(job._id, job.posterId._id)}>
+                Leave Feedback
+              </button>
+            ) : job.status === 'completed' && job.subFeedbackLeft === true ? (
+              <p><em>✅ Feedback Submitted</em></p>
+            ) : null}
           </div>
         ))
       )}

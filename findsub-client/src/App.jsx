@@ -11,6 +11,7 @@ import PublicProfile from './pages/PublicProfile';
 import UserDirectory from './pages/UserDirectory';
 import JobsHub from './pages/JobsHub';
 import JobDetail from './pages/JobDetail';
+import FeedbackForm from './pages/FeedbackForm';
 
 // 🧭 Role-specific dashboards
 import DashboardDom from './pages/DashboardDom';
@@ -76,6 +77,8 @@ function App() {
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/users" element={<UserDirectory />} />
 
+            {/* 🧭 Feedback Page */}
+            <Route path="/feedback/:jobId/:toUserId" element={<FeedbackForm />} />
           </Routes>
         </main>
 
