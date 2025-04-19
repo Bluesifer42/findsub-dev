@@ -14,7 +14,9 @@ const User = require('./models/User');
 const Job = require('./models/Job');
 const Application = require('./models/Application');
 const Feedback = require('./models/Feedback');
-const Kink = require('./models/Kink'); // Kink model is registered
+const Kink = require('./models/Kink');
+const DevTools = require('./devtools/DevTools');
+
 
 // ==============================
 // Helper Function: Update User Reputation
@@ -287,6 +289,22 @@ app.delete('/api/admin/delete-user/:userId', async (req, res) => {
   }
 });
 
+/**
+ * Admin: Get All Jobs
+ * Returns every job in the system for moderation and dev tools.
+ */
+app.get('/api/admin/jobs', async (req, res) => {
+  try {
+    const jobs = await Job.find({})
+      .sort({ createdAt: -1 })
+      .populate('posterId', 'username')
+      .populate('selectedApplicant', 'username');
+    res.json({ jobs });
+  } catch (err) {
+    console.error('Admin fetch jobs error:', err);
+    res.status(500).json({ message: 'Failed to fetch all jobs.' });
+  }
+});
 
 
 /**
@@ -620,6 +638,7 @@ app.post('/api/login', async (req, res) => {
     const userDoc = await User.findOne({ email })
       .populate('kinks.kink', 'name description')
       .populate('kinkHistory.kink', 'name description');
+
     if (!userDoc) return res.status(401).json({ message: 'Invalid credentials.' });
 
     const isMatch = await bcrypt.compare(password, userDoc.password);
@@ -635,13 +654,14 @@ app.post('/api/login', async (req, res) => {
         role: userDoc.role,
         gender: userDoc.gender,
         experienceLevel: userDoc.experienceLevel,
-        interests: userDoc.interests, // Legacy field.
+        interests: userDoc.interests,
         limits: userDoc.limits,
         phoneNumber: userDoc.phoneNumber,
         emailVerified: userDoc.emailVerified,
         phoneVerified: userDoc.phoneVerified,
         kinks: userDoc.kinks,
-        kinkHistory: userDoc.kinkHistory
+        kinkHistory: userDoc.kinkHistory,
+        isAdmin: userDoc.isAdmin === true // ✅ Force boolean value only
       }
     });
   } catch (err) {
@@ -649,6 +669,27 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 });
+
+/**
+ * Admin: Get All Feedback
+ * Returns all feedback in the system for moderation or inspection.
+ */
+app.get('/api/admin/feedback', async (req, res) => {
+  try {
+    const feedback = await Feedback.find({})
+      .sort({ createdAt: -1 })
+      .populate('fromUser', 'username role')
+      .populate('toUser', 'username role')
+      .populate('jobId', 'title');
+
+    res.json({ feedback });
+  } catch (err) {
+    console.error('Admin feedback fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch all feedback.' });
+  }
+});
+
+
 
 /**
  * Profile Update
@@ -716,6 +757,125 @@ app.post('/api/kinks', async (req, res) => {
     res.status(500).json({ message: 'Failed to create kink.' });
   }
 });
+
+/**
+ * Admin: Get all kinks (management)
+ */
+app.get('/api/admin/kinks', async (req, res) => {
+  try {
+    const kinks = await Kink.find({});
+    res.json({ kinks });
+  } catch (error) {
+    console.error('Admin kink fetch error:', error);
+    res.status(500).json({ message: 'Failed to fetch kinks.' });
+  }
+});
+
+/**
+ * Admin: Add new kink
+ */
+app.post('/api/admin/kinks', async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    if (!name || !description) {
+      return res.status(400).json({ message: 'Name and description are required.' });
+    }
+
+    const existing = await Kink.findOne({ name: new RegExp(`^${name}$`, 'i') });
+    if (existing) {
+      return res.status(409).json({ message: 'Kink already exists.' });
+    }
+
+    const kink = new Kink({ name, description });
+    await kink.save();
+    res.status(201).json({ message: 'Kink created successfully.', kink });
+  } catch (error) {
+    console.error('Admin kink create error:', error);
+    res.status(500).json({ message: 'Failed to create kink.' });
+  }
+});
+
+/**
+ * Admin: Get all jobs
+ */
+app.get('/api/admin/jobs', async (req, res) => {
+  try {
+    const jobs = await Job.find({})
+      .sort({ createdAt: -1 })
+      .populate('posterId', 'username')
+      .populate('selectedApplicant', 'username');
+    res.json({ jobs });
+  } catch (err) {
+    console.error('Admin job fetch error:', err);
+    res.status(500).json({ message: 'Failed to load jobs.' });
+  }
+});
+
+/**
+ * Admin: Delete any job
+ */
+app.delete('/api/admin/jobs/:jobId', async (req, res) => {
+  try {
+    const jobId = req.params.jobId;
+    const job = await Job.findByIdAndDelete(jobId);
+    if (!job) return res.status(404).json({ message: 'Job not found.' });
+
+    // Also remove related applications
+    await Application.deleteMany({ jobId });
+
+    res.json({ message: 'Job deleted successfully.' });
+  } catch (err) {
+    console.error('Admin job delete error:', err);
+    res.status(500).json({ message: 'Failed to delete job.' });
+  }
+});
+
+/**
+ * Admin: Get all users
+ */
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const users = await User.find().select('username email role isAdmin emailVerified phoneVerified trustScore reputationScore');
+    res.json({ users });
+  } catch (err) {
+    console.error('Admin user fetch error:', err);
+    res.status(500).json({ message: 'Failed to load users.' });
+  }
+});
+
+/**
+ * Admin: Delete user by ID
+ */
+app.delete('/api/admin/users/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    // Optional: delete related feedback, jobs, applications (add later)
+    res.json({ message: 'User deleted successfully.' });
+  } catch (err) {
+    console.error('Admin delete user error:', err);
+    res.status(500).json({ message: 'Failed to delete user.' });
+  }
+});
+
+
+
+
+
+/**
+ * DEVTOOLS ------
+ * 
+ * 
+ *  Create test user (Dom/Sub/Switch/Admin)
+ */
+app.post('/api/admin/create-test-user', DevTools.createTestUser);
+
+
+
+
 
 /**
  * Test Route

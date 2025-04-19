@@ -21,10 +21,19 @@ import DashboardSwitch from './pages/DashboardSwitch';
 // 🛠️ Dom-only job posting/editing page
 import DomJobPost from './pages/DomJobPost';
 
-// Admin-only
+// 🔐 Admin-only
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
+import AdminJobs from './pages/AdminJobs';
+import AdminFeedback from './pages/AdminFeedback';
+import AdminKinks from './pages/AdminKinks';
+import AdminDevTools from './pages/AdminDevTools';
 
+
+
+// ✅ Sidebar components
+import AdminSidebar from './components/AdminSidebar';
+import UserSidebar from './components/UserSidebar';
 
 function App() {
   const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
@@ -88,28 +97,22 @@ function App() {
             {/* 🔐 Admin-only */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/jobs" element={<AdminJobs />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
+            <Route path="/admin/kinks" element={<AdminKinks />} />
+            <Route path="/admin/devtools" element={<AdminDevTools />} />
+
+
 
           </Routes>
         </main>
 
-        {/* Sidebar navigation */}
-        <aside className="sidebar">
-          <button className="collapse-btn">☰</button>
-          <nav>
-            <ul>
-              <li>
-                <Link to={user ? `/dashboard/${user.role.toLowerCase()}` : '/login'}>
-                  Dashboard
-                </Link>
-              </li>
-              <li><Link to="/Register">Register</Link></li>
-              <li><Link to="/Jobs">Job Offers</Link></li>
-              <li><Link to="/Messages">Messages</Link></li>
-              <li><Link to="/Profile">Profile</Link></li>
-              <li><Link to="/users">Find Members</Link></li>
-            </ul>
-          </nav>
-        </aside>
+        {/* ✅ Sidebar Logic */}
+        {user?.isAdmin ? (
+          <AdminSidebar />
+        ) : (
+          <UserSidebar role={user?.role} />
+        )}
 
         {/* Footer */}
         <footer className="footer">
