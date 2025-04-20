@@ -16,6 +16,7 @@ const Application = require('./models/Application');
 const Feedback = require('./models/Feedback');
 const Kink = require('./models/Kink');
 const DevTools = require('./devtools/DevTools');
+const AdminKinksController = require('./controllers/AdminKinkController');
 
 
 // ==============================
@@ -137,6 +138,14 @@ app.post('/api/jobs/status', async (req, res) => {
     res.status(500).json({ message: 'Failed to update job status' });
   }
 });
+
+// Admin: Kink Management
+app.get('/api/admin/kinks', AdminKinksController.getAllKinks);
+app.post('/api/admin/kinks', AdminKinksController.createKink);
+app.put('/api/admin/kinks/:id', AdminKinksController.updateKink);
+app.delete('/api/admin/kinks/:id', AdminKinksController.deleteKink);
+
+
 
 /**
  * Update & Re-List Cancelled Job
@@ -754,43 +763,6 @@ app.post('/api/kinks', async (req, res) => {
     res.status(201).json({ message: 'Kink created successfully.', kink: newKink });
   } catch (error) {
     console.error('Error creating kink:', error);
-    res.status(500).json({ message: 'Failed to create kink.' });
-  }
-});
-
-/**
- * Admin: Get all kinks (management)
- */
-app.get('/api/admin/kinks', async (req, res) => {
-  try {
-    const kinks = await Kink.find({});
-    res.json({ kinks });
-  } catch (error) {
-    console.error('Admin kink fetch error:', error);
-    res.status(500).json({ message: 'Failed to fetch kinks.' });
-  }
-});
-
-/**
- * Admin: Add new kink
- */
-app.post('/api/admin/kinks', async (req, res) => {
-  try {
-    const { name, description } = req.body;
-    if (!name || !description) {
-      return res.status(400).json({ message: 'Name and description are required.' });
-    }
-
-    const existing = await Kink.findOne({ name: new RegExp(`^${name}$`, 'i') });
-    if (existing) {
-      return res.status(409).json({ message: 'Kink already exists.' });
-    }
-
-    const kink = new Kink({ name, description });
-    await kink.save();
-    res.status(201).json({ message: 'Kink created successfully.', kink });
-  } catch (error) {
-    console.error('Admin kink create error:', error);
     res.status(500).json({ message: 'Failed to create kink.' });
   }
 });

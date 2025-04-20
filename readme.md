@@ -146,18 +146,19 @@ findsub-dev/
 1. Clone the repo:
 
 ```bash
+
+## 1. Clone Repo
 git clone https://github.com/Bluesifer42/findsub-dev.git
 cd findsub-dev
 
-2. Install dependencies:
+## 2. Install dependencies:
 cd findsub-client
 npm install
-
 cd ../findsub-server
 npm install
 
 
-3. Create .env inside findsub-server/:
+## 3. Create .env inside findsub-server/:
 MONGO_URI=mongodb+srv://<your Mongo string>
 
 
