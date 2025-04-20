@@ -872,6 +872,9 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
  *  Create test user (Dom/Sub/Switch/Admin)
  */
 app.post('/api/admin/create-test-user', DevTools.createTestUser);
+app.post('/api/admin/create-test-job', DevTools.createTestJob);
+app.delete('/api/admin/purge/:type', DevTools.purgeCollection);
+app.post('/api/admin/create-test-application', DevTools.createTestApplication);
 
 
 
