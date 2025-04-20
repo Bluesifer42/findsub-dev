@@ -10,6 +10,31 @@ FindSub is a private, role-based BDSM platform designed for the Switch, Sub, and
 
 ---
 
+## 🔍 Folder Snapshot
+
+findsub-dev/
+├── client/                      # React frontend
+│   ├── public/
+│   └── src/
+│       ├── components/          # Reusable UI components
+│       ├── pages/               # Page-level components
+│       ├── utils/               # Utility functions and API handlers
+│       ├── App.jsx
+│       └── index.js
+├── server/                      # Express backend
+│   ├── controllers/             # Route handler functions
+│   ├── models/                  # Mongoose schemas
+│   ├── routes/                  # Express route definitions
+│   ├── utils/                   # Utility functions (e.g., logger.js)
+│   ├── server.js                # Entry point for the backend
+│   └── config/                  # Configuration files (e.g., database connection)
+├── README.md                    # Project overview and setup instructions
+├── Milestones.md                # Development milestones and progress tracking
+├── package.json                 # Project metadata and dependencies
+└── .gitignore                   # Specifies files to ignore in Git
+
+---
+
 ## 🛠️ Tech Stack
 
 | Layer        | Technology            |
