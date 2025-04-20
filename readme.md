@@ -10,10 +10,11 @@
 - **Sub**: Applies to jobs, completes tasks, leaves feedback, builds trust.
 - **Switch**: Can do both; can switch once per year for free, else must upgrade.
 - **Admin**: Full site control — can create/edit/delete users, manage feedback and jobs, assign moderator status, and access DevTools. Cannot engage in Dom/Sub activities.
+- **Moderator**: Reviews and moderates content (jobs, feedback, media). Can suspend content and flag users. Participates as Dom or Sub. Cannot delete users or access DevTools.
 
 ## 🔍 Overview
 
-FindSub is a private, role-based BDSM platform designed for the Switch, Sub, and Dom community. It combines verified user profiles with a flexible job/task posting system. The site is sleek, professional, and built with safety, discretion, and usability in mind.
+FindSub is a private, role-based BDSM platform designed for the Switch, Sub, and Dom community. The site aims to provide a safe and reputationally accountable space for adult role-based engagements and combines verified user profiles with a flexible job/task posting system. The site is sleek, professional, and built with user safety, discretion, and usability in mind.
 
 ---
 
