@@ -184,6 +184,32 @@ Job filtering, search, and calendar view
 
 End-to-end messaging and document exchange
 
+## 💸 Coin-Based Economy (Upcoming Feature)
+
+Real Subs is expanding with an internal Coin-based economy designed to reward trust, enforce commitment, and create meaningful reputation dynamics.
+
+### 🛎️ Auctions
+- **Dom-Created Auctions**: Doms post listings that Subs bid on using Coins.
+- **Bid System**: Subs can raise the price by 1–10 Coins per bid. Highest bid closest to auction end wins.
+- **Writing Challenges**: Anti-bot challenges must be solved before bidding.
+- **Cooldowns**: Users may bid once every 60 minutes per auction.
+- **Transparency**: Bid history and live price tracking included.
+- **Pre-Start Editing**: Doms can edit or cancel auctions before they begin.
+
+### 💼 Contracts
+- **Dom-Offered Loans**: Doms offer contracts in £, auto-converted to Coins.
+- **Interest System**: Weekly compounding interest with fixed rate tiers.
+- **Penalty Enforcement**: Fees for setup, early repayment, and missed payments.
+- **Default Handling**: Contracts move to "In Default" after 3 missed payments.
+- **Trust Impact**: Contracts and feedback affect profile trust score and history.
+
+---
+
+> For detailed development progress, see:
+> - [EconomyMilestones.md](./EconomyMilestones.md)
+> - [AuctionMilestones.md](./AuctionMilestones.md)
+> - [ContractsMilestones.md](./ContractsMilestones.md)
+
 Maintained by bluesifer42
 
 🖤 BDSM is about trust, respect, and communication. This platform reflects those values in code.
