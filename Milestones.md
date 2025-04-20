@@ -1,116 +1,165 @@
-# 🛠️ RealSubs Development Milestones
+# ✅ RealSubs Development Milestones
 
-_This document tracks the current, upcoming, and requested feature enhancements for the FindSub / RealSubs BDSM platform._
-
----
-
-## 🧩 Core System Functionality
-
-| Feature                                        | Status | Notes                                               | To Do |
-|------------------------------------------------|:------:|-----------------------------------------------------|-------|
-| User registration & login                      | ✅     | Fully implemented                                   | -     |
-| Age restriction (18+)                          | ✅     | Age check on registration                           | -     |
-| Role system (Dom, Sub, Switch)                 | ✅     | Switches can post/apply                             | -     |
-| Role switching rules                           | ✅     | 1 free switch/year, paid after that                 | -     |
-| Email verification placeholder                 | ✅     | Placeholder functional                              | -     |
-| Mobile verification placeholder                | ✅     | Placeholder functional                              | -     |
-| Profile editing                                | ✅     | Editable via profile page                           | **Enhance:** Expand profile editing to include profile picture upload, a public photo album, and additional tabs (e.g., Completed Jobs with feedback, Basic Info, Media). Integrate address storage with an option to reveal only rough location for job filtering. |
-| Granular profile fields (experience, limits)   | ✅     | Saved and editable                                  | **Enhance:** Change interests and limits from comma-separated text to checkboxes to enable filtering and clearer display. |
-| Reputation system                              | 🔧     | Based on feedback from completed jobs               | **Enhance:** Expand into a granular rating system. For example, have Doms rate factors such as obedience, cleaning ability, cleanliness, smartness, boot licking; and Subs rate strictness, punishment severity, workload, fun, etc. |
-| Profile picture upload                         | ❌     | Planned for v2                                      | **Develop:** Implement secure image upload functionality and a photo album for public viewing. |
-| Certificate upload                             | ❌     | Support + mod validation planned                    | -     |
-| Auto-validation of certificates                | ❌     | Depends on 3rd party service                        | -     |
+This document tracks the current, upcoming, and requested feature enhancements for the FindSub / RealSubs BDSM platform.
 
 ---
 
-## 📦 Jobs System
+## 🟩 Core Features
 
-| Feature                                | Status | Notes                                               | To Do |
-|----------------------------------------|:------:|-----------------------------------------------------|-------|
-| Job creation form                      | ✅     | With all required fields                            | -     |
-| Job categories (hardcoded)             | ✅     | Examples: Chauffeur, Boot Licker, etc.              | -     |
-| Job start date, time, min duration     | ✅     | Shown in UI                                         | -     |
-| Expiry date for job                    | ✅     | Auto-expiring logic in place                        | -     |
-| Recurring job support                  | 🔧     | Partially handled manually                          | -     |
-| Cancel job                             | ✅     | Can cancel before job start                         | -     |
-| Edit / Re-list job                     | ✅     | Opens in `/jobs/edit/:id`                           | -     |
-| Job templates                          | ❌     | Planned template system                             | **Develop:** Create reusable job templates for rapid reposting. |
-| Job visibility logic                   | ✅     | Filled jobs shown for 7 days                        | -     |
-| Specific user request by Dom           | ❌     | Not currently available                             | **Develop:** Add capability for Doms to search/browse profiles and directly invite or assign jobs to specific users. |
-| Compensation input                     | ❌     | Currently a free text input                         | **Develop:** Replace free text input with a monetary value field (in £) that clearly indicates the payment direction (who is to be paid) plus checkboxes for extras (e.g., coffee, flowers, chocolates, wine). |
-
----
-
-## 🤝 Applications & Feedback
-
-| Feature                                        | Status | Notes                                               | To Do |
-|------------------------------------------------|:------:|-----------------------------------------------------|-------|
-| Apply / express interest                       | ✅     | For Subs/Switches only                              | -     |
-| Cover letter with application                  | ✅     | Optional message field                              | -     |
-| Poster views applicants                        | ✅     | With profile and comments                           | -     |
-| Select applicant                               | ✅     | Locks job from further applications               | -     |
-| Leave feedback (poster → sub)                  | ✅     | Via completed job history                           | -     |
-| Leave feedback (sub → poster)                  | ✅     | Via completed job history                           | -     |
-| Public feedback on profile                     | ✅     | Stars/comments visible on profiles                | -     |
-| One feedback per job per user                  | ✅     | Enforced server-side                                | -     |
-| Enhanced Reputation/Rating breakdown           | ❌     | Current system uses a basic star rating system      | **Enhance:** Transition to a more detailed rating system with multiple criteria for each role. |
+- [x] Sub and Dom account creation
+- [x] Public profile pages
+- [x] Basic editable profile
+- [x] Job posting by Dom or Switch
+- [x] Job board for Subs
+- [x] Job application by Sub
+- [x] Poster can view applicants
+- [x] Poster can select applicant
+- [x] Jobs can be cancelled or re-listed
+- [x] Job status system (open, filled, completed, failed, cancelled)
+- [x] Role-specific job tabs (e.g. “Manage Jobs” vs “Job History”)
+- [x] Applications visible inline to Dom in JobDetail view
+- [x] Completed jobs allow mutual feedback
+- [x] Feedback triggers reputation + honesty update
+- [x] Job categories enum (Chauffeur, Domestic Cleaning, etc.)
+- [x] Job start date, start time, minimum duration stored
+- [x] Required kinks can be assigned to jobs
 
 ---
 
-## 🧭 Navigation & UX
+## 🔁 Feedback System
 
-| Feature                                | Status | Notes                                             | To Do |
-|----------------------------------------|:------:|---------------------------------------------------|-------|
-| Sticky header & footer                 | ✅     | Always visible                                    | -     |
-| Collapsible right-side nav             | ❌     | Planned sidebar toggle                            | **Develop:** Implement a collapsible sidebar for easier navigation. |
-| Role-based dashboards                  | ✅     | Clean separation based on user role               | -     |
-| Job section with tabs                  | ✅     | Dynamic per role                                  | **Enhance:** Consider adding tabs within the profile page (e.g., Basic Info, Completed Jobs, Photos). |
-| Tab: Job Board                         | ✅     | Shows public jobs                                 | -     |
-| Tab: Manage Jobs                       | ✅     | For posters (Doms/Switches)                       | -     |
-| Tab: My Jobs / Active Jobs             | ✅     | For applicants                                    | -     |
-| Tab: Job History                       | ✅     | Completed + failed jobs                           | -     |
-| Dark mode toggle                       | ❌     | Nice-to-have for v2                               | **Develop:** Implement a dark mode option to improve usability on mobile. |
-| Mobile responsiveness                  | 🔧     | Base layout works, fine-tuning needed             | **Enhance:** Optimize mobile views, particularly for new profile enhancements (photo albums, refined checkboxes, etc.). |
+- [x] Feedback form with role-specific fields
+- [x] Shared general rating + honesty score
+- [x] Subs rate Doms: strictness, communication, etc.
+- [x] Doms rate Subs: obedience, work ethic, etc.
+- [x] Kink-based interest ratings included (for Doms)
+- [x] Feedback only enabled once job is marked “completed”
+- [x] Feedback must be mutual to influence trust score
+- [x] Feedback display on JobDetail with interest ratings
+- [x] Feedback form includes badge gifting
 
 ---
 
-## 💳 Payments & Monetization
+## 🧠 Trust & Reputation
 
-| Feature                                | Status | Notes                                               | To Do |
-|----------------------------------------|:------:|-----------------------------------------------------|-------|
-| Membership tiers (Basic / Pro / Elite) | ❌     | Planned access system                               | **Plan:** Define feature gating by membership and design tier benefits. |
-| Stripe integration (on-site payment)   | ❌     | Placeholder now                                     | **Plan:** Begin integration work with the Stripe API. |
-| Lock features behind membership        | ❌     | e.g., access to enhanced feedback or applications   | **Develop:** Determine which features are premium and implement access controls. |
-| Transaction logs                        | ❌     | Currently, logs are off-site and internal only      | **Develop:** Create an in-app transaction log for user transparency. |
-| Mod/Admin roles & promotion             | ✅     | Admins via backend only                             | -     |
-| Moderator-reviewed content              | ✅     | No auto-filtering needed                            | -     |
-| Admin tools for job/user management     | ❌     | Basic admin dashboard required                    | **Develop:** Build a simple dashboard for admins to manage users and jobs. |
+- [x] Trust score calculation includes profile completeness + job history
+- [x] Honesty score derived from feedback
+- [x] Reputation score = average feedback rating
+- [x] Badge gifting system supports kink-linked recognition
+- [x] Badge tier logic (based on count)
+- [x] Public trust score on profile
+- [x] Admin DevTools support feedback + badge flow testing
 
 ---
 
-## 🌍 Safety, Legal, and Trust
+## ⚒️ Admin Features
 
-| Feature                                | Status | Notes                                             | To Do |
-|----------------------------------------|:------:|---------------------------------------------------|-------|
-| Age verification                        | ✅     | Enforced on signup                                | -     |
-| Certificate validation                  | ❌     | Manual by moderators for now                      | -     |
-| End-to-end encrypted messages           | ✅     | Enforced for private chats                        | -     |
-| Secure Messaging Service                | ❌     | No secure messaging module in place               | **Develop:** Implement a secure messaging system that logs conversations, with admin oversight for moderation if needed. |
-| Anonymous contact toggle                | ❌     | Optional for later phases                         | **Plan:** Develop settings for anonymous contact visibility. |
-| Clear terms & guidelines                | ❌     | Static pages required                             | **Develop:** Create static pages for terms, guidelines, and privacy policies. |
-| GDPR / data policy compliance           | ❌     | Need option for data export and deletion          | **Develop:** Incorporate features for data management in compliance with GDPR and local data policies. |
+- [x] Dedicated admin dashboard
+- [x] Admin sidebar auto-loads for admin accounts
+- [x] View all users
+- [x] View/delete any job
+- [x] View all feedback system-wide
+- [x] View/add/edit/delete kinks
+- [x] See selected applicant inline on job view
+- [x] DevTools panel (for testing/staging)
+  - [x] Create test users (auto email + password 1234)
+  - [x] Create test job (linked to Dom)
+  - [x] Generate fake applications (Sub + job selected)
+  - [x] Purge: Users, Jobs, Applications, Feedback
+  - [x] All DevTools moved to a separate modular file
+- [x] Kinks manager supports edit/delete inline
+- [x] Submitting feedback sets flags (`subFeedbackLeft`, `domFeedbackLeft`)
 
 ---
 
-## 💡 Suggested Enhancements
+## ⚙️ In Progress / Upcoming
 
-| Feature                                | Priority | Notes                                             | To Do |
-|----------------------------------------|:--------:|---------------------------------------------------|-------|
-| Job bookmarking/favorites              | ⭐      | Let users favorite job posts                      | **Develop:** Enable a bookmarking function for jobs. |
-| Push/email notifications               | ⭐      | Alerts for job applications, selections, etc.     | **Develop:** Integrate a push/email notification system for important events. |
-| "Draft" job state                      | ⭐⭐     | Save job without posting immediately              | **Develop:** Allow job postings to be saved as drafts for later editing and posting. |
-| Reputation badges                      | ⭐      | Auto-awarded based on performance                 | **Plan:** Define criteria and badge system; integrate badges into user profiles. |
-| Dynamic job expiry reminders           | ⭐⭐     | Reminders for job expiration for posters          | **Develop:** Add reminder notifications as jobs approach expiry. |
-| AI spam detection                      | ⭐      | Optional content screening                        | **Explore:** Integrate basic AI-based spam detection for user content. |
-| Template-based job posting             | ⭐⭐     | Save and reuse common job formats                 | **Develop:** Create a module for saving and reusing job templates to reduce posting time. |
+- [ ] Admin: Manually trigger trust recalculation per user
+- [ ] Show all feedback given/received by a user in admin view
+- [ ] Feedback summary per user (average ratings)
+- [ ] View badge ownership + badge tier visually
+- [ ] Feedback tab on profile
+- [ ] Reputation badge system (displayed icons)
+- [ ] "Jobs I Applied To" tab for Subs
+- [ ] Soft-delete system for content moderation
+- [ ] Admin warnings or notes on users
 
+---
+
+## ✨ Wishlist
+
+- [ ] Real-time site dashboard (e.g. active jobs, users online)
+- [ ] Token/coin integration (reward system)
+- [ ] Contract system (scheduled roles + repeat jobs)
+- [ ] Subscriptions (Basic vs Pro users)
+- [ ] Photo + video gallery (media permissions)
+- [ ] Private notes on profiles (for personal tracking)
+- [ ] Profile verification request/review
+- [ ] Kink matcher (compatibility checker)
+- [ ] Job clone/repost option
+- [ ] Interest/skill tagging + search
+
+---
+
+# 🪙 Economy Milestones
+
+This document tracks planned features and logic for the Coins-based economy system within RealSubs.
+
+## Phase 1: Coin Foundation
+
+- [x] User `coins` field on backend
+- [ ] Admin DevTool: Add coins to user
+- [ ] Coins visible on user profile
+- [ ] Coins deducted on auction or contract use
+
+## Phase 2: Microtransaction Hooks
+
+- [ ] Badge gifting requires coins
+- [ ] Feedback unlock boosts trust with coins
+- [ ] Kink feature unlocks for subs/dom based on coins
+- [ ] Advanced profiles (media, highlight) cost coins
+
+---
+
+# 🔨 Contract System Milestones
+
+This document tracks features related to the contract-based workflow for ongoing or scheduled Dom/Sub arrangements.
+
+## Core Contract Structure
+
+- [ ] Contract schema created
+- [ ] Contracts linked to Job OR directly created from user profiles
+- [ ] Contract includes start, end, frequency, repeat
+- [ ] Contract includes coin payments or reward
+- [ ] Trust score tied to contract performance
+
+## Contract User Interface
+
+- [ ] Doms can offer a contract from profile or job
+- [ ] Subs can view offered contracts and accept/reject
+- [ ] Mutual consent required to activate contract
+- [ ] In-progress contract view (dom/sub dashboards)
+- [ ] Feedback available at conclusion of contract
+- [ ] Early termination / cancelation reasons tracked
+
+---
+
+# 🏁 Auction Milestones
+
+This document tracks the development of the Coin-based auction system used for bidding on tasks, jobs, or submissive time slots.
+
+## Auction Core
+
+- [ ] Auction schema (title, description, image, start/end time)
+- [ ] Start bid, current bid, highest bidder
+- [ ] Coins deducted from bidder on winning
+- [ ] Dom-only auction creation
+- [ ] Sub-only auction participation
+
+## UI / Experience
+
+- [ ] Countdown timer
+- [ ] Bid history shown
+- [ ] Auto-bid detection
+- [ ] Limit max bid per user
+- [ ] Hide/Show auction from public job board
