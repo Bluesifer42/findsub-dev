@@ -69,6 +69,20 @@ This document tracks the current, upcoming, and requested feature enhancements f
   - [x] All DevTools moved to a separate modular file
 - [x] Kinks manager supports edit/delete inline
 - [x] Submitting feedback sets flags (`subFeedbackLeft`, `domFeedbackLeft`)
+- [x] Admin panel structure with route protection
+- [x] Kink Manager (CRUD) with AdminKinkController.js
+- [x] Admin sidebar with dynamic role detection
+- [x] DevTools module created in devtools/DevTools.js
+- [x] Create test users (default password: 1234)
+- [x] Auto-generate user emails as <username>@findsub.com
+- [x] Create test jobs assigned to selected Dom
+- [x] Generate test applications from Sub to Job
+- [x] Purge utilities for: users, jobs, applications, feedback
+- [x] Admin views for: all users, all jobs, all feedback
+- [x] Admin ability to delete users, jobs, and feedback
+- [x] Admin sidebar links to all tools and dashboards
+- [x] AdminKinks.jsx: inline editing and deletion now active
+- [x] Modular controller created: AdminKinkController.js
 
 ---
 
@@ -83,6 +97,11 @@ This document tracks the current, upcoming, and requested feature enhancements f
 - [ ] "Jobs I Applied To" tab for Subs
 - [ ] Soft-delete system for content moderation
 - [ ] Admin warnings or notes on users
+- [ ] Modularizing backend: splitting server.js into routes/ and controllers/
+- [ ] Route groups: auth, jobs, users, feedback, applications, admin
+- [ ] Add API logging/errors to backend functions (via logger.js)
+- [ ] Trust score recalculation triggers (per user or bulk)
+- [ ] Begin connecting /utils/api.js for shared frontend fetch logic
 
 ---
 
@@ -98,12 +117,18 @@ This document tracks the current, upcoming, and requested feature enhancements f
 - [ ] Kink matcher (compatibility checker)
 - [ ] Job clone/repost option
 - [ ] Interest/skill tagging + search
+- [ ] User promotion/suspension system (admin and mod handling)
+- [ ] Badge viewer + gifting logic
+- [ ] Trust & reputation scoring dashboard
+- [ ] Seeder: generate full test environment (Doms, Subs, jobs, feedback)
+- [ ] Admin toggle: enable/disable user accounts
+- [ ] Add profile audit score & completeness logic
+- [ ] Trust/reputation breakdown on public profile view
+- [ ] Kink history and usage stats per user
 
 ---
 
 # 🪙 Economy Milestones
-
-This document tracks planned features and logic for the Coins-based economy system within RealSubs.
 
 ## Phase 1: Coin Foundation
 
@@ -122,8 +147,6 @@ This document tracks planned features and logic for the Coins-based economy syst
 ---
 
 # 🔨 Contract System Milestones
-
-This document tracks features related to the contract-based workflow for ongoing or scheduled Dom/Sub arrangements.
 
 ## Core Contract Structure
 
@@ -146,8 +169,6 @@ This document tracks features related to the contract-based workflow for ongoing
 
 # 🏁 Auction Milestones
 
-This document tracks the development of the Coin-based auction system used for bidding on tasks, jobs, or submissive time slots.
-
 ## Auction Core
 
 - [ ] Auction schema (title, description, image, start/end time)
@@ -163,3 +184,13 @@ This document tracks the development of the Coin-based auction system used for b
 - [ ] Auto-bid detection
 - [ ] Limit max bid per user
 - [ ] Hide/Show auction from public job board
+
+---
+
+🧪 Dev-Only Tools
+
+- [x] Test user creator
+- [x] Auto application + job links
+- [x] Purge buttons for test cycles
+- [ ] Seed fake feedbacks (Dom/Sub role pairings)
+- [ ] Rebuild trust calculation manually (per user or system-wide)
