@@ -1,7 +1,20 @@
-exports.submitFeedback = (req, res) => {
-  res.send('submitFeedback not implemented');
+const Feedback = require('../models/Feedback');
+
+exports.submitFeedback = async (req, res) => {
+  try {
+    const feedback = new Feedback(req.body);
+    await feedback.save();
+    res.status(201).json(feedback);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to submit feedback' });
+  }
 };
 
-exports.getFeedbackForJob = (req, res) => {
-  res.send('getFeedbackForJob not implemented');
+exports.getFeedbackForJob = async (req, res) => {
+  try {
+    const feedbackList = await Feedback.find({ jobId: req.params.jobId });
+    res.json(feedbackList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch feedback' });
+  }
 };
