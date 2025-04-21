@@ -1,15 +1,40 @@
-exports.getAllKinks = (req, res) => {
-  res.send('getAllKinks not implemented');
+const Kink = require('../models/Kink');
+
+exports.getAllKinks = async (req, res) => {
+  try {
+    const kinks = await Kink.find();
+    res.json(kinks);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch kinks' });
+  }
 };
 
-exports.createKink = (req, res) => {
-  res.send('createKink not implemented');
+exports.createKink = async (req, res) => {
+  try {
+    const kink = new Kink(req.body);
+    await kink.save();
+    res.status(201).json(kink);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create kink' });
+  }
 };
 
-exports.updateKink = (req, res) => {
-  res.send('updateKink not implemented');
+exports.updateKink = async (req, res) => {
+  try {
+    const updated = await Kink.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Kink not found' });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update kink' });
+  }
 };
 
-exports.deleteKink = (req, res) => {
-  res.send('deleteKink not implemented');
+exports.deleteKink = async (req, res) => {
+  try {
+    const deleted = await Kink.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Kink not found' });
+    res.json({ message: 'Kink deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete kink' });
+  }
 };
