@@ -1,40 +1,107 @@
-exports.createJob = (req, res) => {
-  // handle job creation
-  res.send('createJob not implemented');
+const Job = require('../models/Job');
+const User = require('../models/User');
+
+exports.createJob = async (req, res) => {
+  try {
+    const newJob = new Job(req.body);
+    await newJob.save();
+    res.status(201).json(newJob);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create job' });
+  }
 };
 
-exports.getJobById = (req, res) => {
-  res.send('getJobById not implemented');
+exports.getJobById = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    res.json(job);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get job' });
+  }
 };
 
-exports.editJob = (req, res) => {
-  res.send('editJob not implemented');
+exports.editJob = async (req, res) => {
+  try {
+    const updated = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Job not found' });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update job' });
+  }
 };
 
-exports.updateJobStatus = (req, res) => {
-  res.send('updateJobStatus not implemented');
+exports.updateJobStatus = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    job.status = req.body.status;
+    await job.save();
+    res.json(job);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update status' });
+  }
 };
 
-exports.getUserJobs = (req, res) => {
-  res.send('getUserJobs not implemented');
+exports.getUserJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ postedBy: req.params.userId });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get user jobs' });
+  }
 };
 
-exports.getAppliedJobs = (req, res) => {
-  res.send('getAppliedJobs not implemented');
+exports.getAppliedJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ applicants: req.params.userId });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get applied jobs' });
+  }
 };
 
-exports.getFilledJobs = (req, res) => {
-  res.send('getFilledJobs not implemented');
+exports.getFilledJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ selected: req.params.userId });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get filled jobs' });
+  }
 };
 
-exports.applyToJob = (req, res) => {
-  res.send('applyToJob not implemented');
+exports.applyToJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    job.applicants.push(req.body.userId);
+    await job.save();
+    res.json(job);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to apply to job' });
+  }
 };
 
-exports.selectSub = (req, res) => {
-  res.send('selectSub not implemented');
+exports.selectSub = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    job.selected = req.body.userId;
+    await job.save();
+    res.json(job);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to select sub' });
+  }
 };
 
-exports.retractApplication = (req, res) => {
-  res.send('retractApplication not implemented');
+exports.retractApplication = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    job.applicants = job.applicants.filter(id => id !== req.body.userId);
+    await job.save();
+    res.json(job);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retract application' });
+  }
 };
