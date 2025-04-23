@@ -1,7 +1,8 @@
+// Register.jsx
+
 import { useState } from 'react';
 
 function Register() {
-  // Updated state: removed the "limits" field.
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -10,7 +11,7 @@ function Register() {
     gender: '',
     dateOfBirth: '',
     experienceLevel: 'Beginner',
-    phoneNumber: '' // New field for phone number
+    phoneNumber: ''
   });
 
   const [status, setStatus] = useState('');
@@ -22,70 +23,95 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const body = {
-      ...formData
-      // The interests field has been removed; users will update their kinks on their profile.
-    };
-
     try {
-      const res = await fetch(`http://localhost:5000/api/register`, {
+      const res = await fetch(`http://localhost:5000/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(formData)
       });
 
       const data = await res.json();
 
       if (res.ok) {
         setStatus('✅ Registration successful! Redirecting...');
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
+        setTimeout(() => (window.location.href = '/login'), 2000);
       } else {
         setStatus(`❌ ${data.message}`);
       }
-    } catch (error) {
-      console.error('Registration error:', error);
+    } catch (err) {
+      console.error('Registration error:', err);
       setStatus('❌ Server error. Please try again later.');
     }
   };
 
   return (
-    <div>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <input name="username" placeholder="Username" onChange={handleChange} required /><br />
-        <input name="email" type="email" placeholder="Email" onChange={handleChange} required /><br />
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} required /><br />
-
-        <select name="role" onChange={handleChange} required>
+    <div className="max-w-md mx-auto p-4">
+      <h2 className="text-xl font-bold mb-2">Register</h2>
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <input
+          name="username"
+          placeholder="Username"
+          onChange={handleChange}
+          required
+          className="w-full p-2 border"
+        />
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          onChange={handleChange}
+          required
+          className="w-full p-2 border"
+        />
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          onChange={handleChange}
+          required
+          className="w-full p-2 border"
+        />
+        <select name="role" onChange={handleChange} required className="w-full p-2 border">
           <option value="">Select Role</option>
           <option value="Sub">Sub</option>
           <option value="Switch">Switch</option>
           <option value="Dom">Dom</option>
-        </select><br />
-
-        <select name="gender" onChange={handleChange} required>
+        </select>
+        <select name="gender" onChange={handleChange} required className="w-full p-2 border">
           <option value="">Select Gender</option>
           <option value="male">Male</option>
           <option value="female">Female</option>
-        </select><br />
-
-        <input name="dateOfBirth" type="date" onChange={handleChange} required /><br />
-
-        <select name="experienceLevel" onChange={handleChange}>
+        </select>
+        <input
+          name="dateOfBirth"
+          type="date"
+          onChange={handleChange}
+          required
+          className="w-full p-2 border"
+        />
+        <select
+          name="experienceLevel"
+          value={formData.experienceLevel}
+          onChange={handleChange}
+          className="w-full p-2 border"
+        >
           <option value="Beginner">Beginner</option>
           <option value="Intermediate">Intermediate</option>
           <option value="Advanced">Advanced</option>
-        </select><br />
+        </select>
+        <input
+          name="phoneNumber"
+          placeholder="Phone Number (optional)"
+          onChange={handleChange}
+          className="w-full p-2 border"
+        />
 
-        <input name="phoneNumber" placeholder="Phone Number (optional)" onChange={handleChange} /><br />
-
-        <button type="submit">Register</button>
+        <button type="submit" className="w-full bg-blue-600 text-white py-2">
+          Register
+        </button>
       </form>
 
-      <p>{status}</p>
+      {status && <p className="mt-4">{status}</p>}
     </div>
   );
 }

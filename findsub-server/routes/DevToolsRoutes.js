@@ -1,3 +1,6 @@
+// /routes/DevToolsRoutes.js
+console.log('📦 /routes/DevToolsRoutes.js mounted');
+
 const express = require('express');
 const router = express.Router();
 const devToolsController = require('../controllers/devToolsController');

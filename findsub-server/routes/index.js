@@ -1,3 +1,6 @@
+// routes/index.js
+console.log('📦 /routes/index.js mounted');
+
 const JobsRoutes = require('./JobsRoutes');
 const UsersRoutes = require('./UsersRoutes');
 const FeedbackRoutes = require('./FeedbackRoutes');

@@ -1,5 +1,3 @@
-import React from 'react';
-
 function SubFeedbackFields({ setGeneralRatings }) {
   const handleRatingChange = (field, value) => {
     setGeneralRatings(prev => ({ ...prev, [field]: Number(value) }));
@@ -16,16 +14,17 @@ function SubFeedbackFields({ setGeneralRatings }) {
 
   return (
     <div>
-      <h3>Dom Behavior & Session Feedback</h3>
+      <h3 className="text-lg font-semibold mb-2">Dom Behavior & Session Feedback</h3>
       {domFeedbackFields.map(label => (
-        <div key={label}>
-          <label>{label}:</label>
+        <div key={label} className="mb-3">
+          <label className="block mb-1">{label}:</label>
           <input
             type="number"
             min={1}
             max={5}
             onChange={e => handleRatingChange(label, e.target.value)}
             required
+            className="border p-1 w-20"
           />
         </div>
       ))}

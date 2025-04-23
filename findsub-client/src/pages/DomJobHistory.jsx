@@ -1,44 +1,57 @@
+// src/pages/DomJobHistory.jsx
+
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useUser } from '../hooks/useUser';
+import { getDomJobHistory } from '../utils/api';
 
 function DomJobHistory() {
-  const [user, setUser] = useState(null);
+  const { user, isDom, isAuthenticated, isLoading } = useUser();
+  const navigate = useNavigate();
+
   const [jobs, setJobs] = useState([]);
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (!stored) return;
+    if (!isLoading && (!isAuthenticated || !isDom)) {
+      navigate('/login');
+    }
+  }, [isLoading, isAuthenticated, isDom, navigate]);
 
-    const parsed = JSON.parse(stored);
-    setUser(parsed);
+  useEffect(() => {
+    if (!user || !isDom) return;
 
-    const userId = parsed._id || parsed.id;
-    if (!userId || parsed.role !== 'Dom') return;
-
-    fetch(`http://localhost:5000/api/jobs/history/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        const finished = (data.jobs || []).filter(job =>
-          job.posterId._id === userId &&
+    (async () => {
+      try {
+        const { jobs: all } = await getDomJobHistory(user._id || user.id);
+        const finished = (all || []).filter(job =>
+          job.posterId._id === (user._id || user.id) &&
           ['completed', 'failed'].includes(job.status)
         );
         setJobs(finished);
-      })
-      .catch(() => setStatus('❌ Failed to load job history.'));
-  }, []);
+      } catch (err) {
+        setStatus('❌ Failed to load job history.');
+      }
+    })();
+  }, [user, isDom]);
+
+  if (isLoading || !user) return <p className="text-center mt-4">Loading job history...</p>;
 
   return (
-    <div>
-      <h2>Job History (Posted by You)</h2>
-      {status && <p>{status}</p>}
+    <div className="max-w-4xl mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">Job History (Posted by You)</h2>
+      {status && <p className="text-red-600">{status}</p>}
 
       {jobs.length === 0 ? (
         <p>No completed or failed jobs yet.</p>
       ) : (
         jobs.map(job => (
-          <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-            <h3><Link to={`/job/${job._id}`}>{job.title}</Link></h3>
+          <div key={job._id} className="border p-4 mb-4 rounded shadow-sm">
+            <h3 className="text-lg font-semibold">
+              <Link to={`/job/${job._id}`} className="text-blue-600 hover:underline">
+                {job.title}
+              </Link>
+            </h3>
             <p>{job.description}</p>
             <p><strong>Status:</strong> {job.status}</p>
             <p><strong>Selected Sub:</strong> {job.selectedApplicant?.username || 'N/A'}</p>

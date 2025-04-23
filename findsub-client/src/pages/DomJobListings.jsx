@@ -1,44 +1,58 @@
+// src/pages/DomJobListings.jsx
+
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useUser } from '../hooks/useUser';
+import { getJobsByPoster } from '../utils/api';
 
 function DomJobListings() {
-  const [user, setUser] = useState(null);
-  const [jobs, setJobs] = useState([]);
+  const { user, isDom, isAuthenticated, isLoading } = useUser();
   const navigate = useNavigate();
 
+  const [jobs, setJobs] = useState([]);
+
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (!stored) return;
+    if (!isLoading && (!isAuthenticated || !isDom)) {
+      navigate('/login');
+    }
+  }, [isLoading, isAuthenticated, isDom, navigate]);
 
-    const parsed = JSON.parse(stored);
-    setUser(parsed);
+  useEffect(() => {
+    if (!user || !isDom) return;
 
-    const userId = parsed._id || parsed.id;
-    if (!userId || parsed.role !== 'Dom') return;
-
-    fetch(`http://localhost:5000/api/jobs?view=poster&posterId=${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        const unfilled = (data.jobs || []).filter(job =>
-          job.status === 'open' &&
-          !job.selectedApplicant
+    (async () => {
+      try {
+        const { jobs: all } = await getJobsByPoster(user._id || user.id);
+        const unfilled = (all || []).filter(job =>
+          job.status === 'open' && !job.selectedApplicant
         );
         setJobs(unfilled);
-      })
-      .catch(() => console.error('Failed to load listings.'));
-  }, []);
+      } catch (err) {
+        console.error('Failed to load listings.');
+      }
+    })();
+  }, [user, isDom]);
+
+  if (isLoading || !user) return <p className="text-center mt-4">Loading your listings...</p>;
 
   return (
-    <div>
-      <h2>My Unfilled Listings</h2>
+    <div className="max-w-4xl mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">My Unfilled Listings</h2>
+
       {jobs.length === 0 ? (
         <p>You don’t have any open, unfilled jobs right now.</p>
       ) : (
         jobs.map(job => (
-          <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-            <h3><Link to={`/job/${job._id}`}>{job.title}</Link></h3>
+          <div key={job._id} className="border p-4 mb-4 rounded shadow-sm">
+            <h3 className="text-lg font-semibold">
+              <Link to={`/job/${job._id}`} className="text-blue-600 hover:underline">
+                {job.title}
+              </Link>
+            </h3>
             <p>{job.description}</p>
-            <button onClick={() => navigate(`/jobs/edit/${job._id}`)}>✏️ Edit Job</button>
+            <button onClick={() => navigate(`/jobs/edit/${job._id}`)} className="mt-2 text-sm">
+              ✏️ Edit Job
+            </button>
           </div>
         ))
       )}

@@ -1,3 +1,6 @@
+// /routes/JobsRoutes.js
+console.log('📦 /routes/JobsRoutes.js mounted');
+
 const express = require('express');
 const router = express.Router();
 const jobsController = require('../controllers/jobsController');

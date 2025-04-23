@@ -1,3 +1,5 @@
+// /components/NavBar.jsx
+
 import { Link, useNavigate } from 'react-router-dom';
 
 function NavBar({ user, setUser }) {
@@ -10,16 +12,24 @@ function NavBar({ user, setUser }) {
   };
 
   return (
-    <header className="header">
-      <h1 style={{ flex: 1 }}>FindSub</h1>
-      <div className="user-info">
+    <header className="bg-gray-800 text-white px-4 py-3 flex items-center justify-between shadow-md">
+      <Link to="/" className="text-xl font-bold tracking-wide hover:text-blue-300">
+        FindSub
+      </Link>
+
+      <div className="flex items-center gap-4">
         {user ? (
           <>
-            <span>{user.username}</span>
-            <button className="logout-btn" onClick={logout}>Logout</button>
+            <span className="text-sm">{user.username}</span>
+            <button
+              onClick={logout}
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+            >
+              Logout
+            </button>
           </>
         ) : (
-          <span>Not logged in</span>
+          <span className="text-sm">Not logged in</span>
         )}
       </div>
     </header>

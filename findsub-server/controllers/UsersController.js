@@ -1,7 +1,12 @@
+// /controllers/UsersController.js
+console.log('📦 /controllers/UsersController.js mounted');
+
 const User = require('../models/User');
 
 exports.getUserById = async (req, res) => {
   try {
+    console.log('📥 getUserById triggered');
+  res.send('ok');
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);

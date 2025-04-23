@@ -1,4 +1,12 @@
+// src/pages/AdminKinks.jsx
+
 import { useEffect, useState } from 'react';
+import {
+  getKinks,
+  createKink,
+  updateKink,
+  deleteKink
+} from '../utils/api';
 
 function AdminKinks() {
   const [kinks, setKinks] = useState([]);
@@ -7,39 +15,43 @@ function AdminKinks() {
   const [status, setStatus] = useState('');
   const [editingId, setEditingId] = useState(null);
 
-  // Fetch all kinks
-  const fetchKinks = () => {
-    fetch('http://localhost:5000/api/admin/kinks')
-      .then(res => res.json())
-      .then(data => setKinks(data.kinks))
-      .catch(() => setStatus('Failed to fetch kinks.'));
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setEditingId(null);
+    setStatus('');
   };
 
-  useEffect(() => {
-    fetchKinks();
-  }, []);
-
-  // Create new kink
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    const res = await fetch('http://localhost:5000/api/admin/kinks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description })
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      setStatus('✅ Kink created!');
-      setName('');
-      setDescription('');
-      fetchKinks();
-    } else {
-      setStatus(data.message || 'Failed to create kink.');
+  const fetchKinksList = async () => {
+    try {
+      const { kinks } = await getKinks();
+      setKinks(kinks);
+    } catch (err) {
+      setStatus('❌ Failed to fetch kinks.');
     }
   };
 
-  // Start editing
+  useEffect(() => {
+    fetchKinksList();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingId) {
+        await updateKink(editingId, { name, description });
+        setStatus('✅ Kink updated.');
+      } else {
+        await createKink({ name, description });
+        setStatus('✅ Kink created!');
+      }
+      resetForm();
+      fetchKinksList();
+    } catch (err) {
+      setStatus(`❌ ${err.message || 'Operation failed.'}`);
+    }
+  };
+
   const handleEditStart = (kink) => {
     setEditingId(kink._id);
     setName(kink.name);
@@ -47,87 +59,60 @@ function AdminKinks() {
     setStatus('');
   };
 
-  // Cancel edit
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setName('');
-    setDescription('');
-    setStatus('');
-  };
-
-  // Submit edit
-  const handleEditSubmit = async () => {
-    const res = await fetch(`http://localhost:5000/api/admin/kinks/${editingId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description })
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      setStatus('✅ Kink updated.');
-      setEditingId(null);
-      setName('');
-      setDescription('');
-      fetchKinks();
-    } else {
-      setStatus(data.message || 'Failed to update kink.');
-    }
-  };
-
-  // Delete kink
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this kink?')) return;
-
-    const res = await fetch(`http://localhost:5000/api/admin/kinks/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await res.json();
-    if (res.ok) {
+    try {
+      await deleteKink(id);
       setStatus('✅ Kink deleted.');
-      fetchKinks();
-    } else {
-      setStatus(data.message || 'Failed to delete kink.');
+      fetchKinksList();
+    } catch (err) {
+      setStatus(`❌ ${err.message}`);
     }
   };
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <h2>Admin: Kink Manager</h2>
+    <div className="max-w-2xl mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">Admin: Kink Manager</h2>
 
-      {/* Add or Edit Form */}
-      <form onSubmit={editingId ? handleEditSubmit : handleCreate} style={{ marginBottom: '2rem' }}>
-        <h4>{editingId ? '✏️ Edit Kink' : '➕ Add New Kink'}</h4>
+      <form onSubmit={handleSubmit} className="mb-6">
+        <h4 className="font-semibold mb-2">
+          {editingId ? '✏️ Edit Kink' : '➕ Add New Kink'}
+        </h4>
+
         <input
           type="text"
           placeholder="Kink name"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           required
-          style={{ width: '100%', marginBottom: '0.5rem' }}
+          className="w-full mb-2 p-2 border"
         />
         <textarea
           placeholder="Description"
           value={description}
-          onChange={e => setDescription(e.target.value)}
+          onChange={(e) => setDescription(e.target.value)}
           required
-          style={{ width: '100%', marginBottom: '0.5rem' }}
+          className="w-full mb-2 p-2 border"
         />
         <button type="submit">{editingId ? 'Update Kink' : 'Create Kink'}</button>
-        {editingId && <button type="button" onClick={handleEditCancel} style={{ marginLeft: '1rem' }}>Cancel</button>}
-        <p>{status}</p>
+        {editingId && (
+          <button type="button" onClick={resetForm} className="ml-4">
+            Cancel
+          </button>
+        )}
+        <p className="mt-2">{status}</p>
       </form>
 
-      {/* List of All Kinks */}
-      <h4>📚 All Kinks</h4>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <h4 className="font-semibold">📚 All Kinks</h4>
+      <ul className="mt-4 space-y-4 list-none">
         {kinks.map(k => (
-          <li key={k._id} style={{ marginBottom: '1rem' }}>
+          <li key={k._id}>
             <strong>{k.name}</strong><br />
             <span>{k.description}</span><br />
             <button onClick={() => handleEditStart(k)}>Edit</button>
-            <button onClick={() => handleDelete(k._id)} style={{ marginLeft: '1rem' }}>Delete</button>
+            <button onClick={() => handleDelete(k._id)} className="ml-2">
+              Delete
+            </button>
           </li>
         ))}
       </ul>

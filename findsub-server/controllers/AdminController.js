@@ -1,4 +1,5 @@
 const Kink = require('../models/Kink');
+console.log('📦 /controllers/AdminController.js mounted');
 
 exports.getAllKinks = async (req, res) => {
   try {

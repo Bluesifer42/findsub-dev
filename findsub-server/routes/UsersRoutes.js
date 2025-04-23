@@ -1,10 +1,13 @@
+// /routes/UsersRoutes.js
+console.log('📦 /routes/UsersRoutes.js mounted');
+
 const express = require('express');
 const router = express.Router();
-const usersController = require('../controllers/usersController');
+const UsersController = require('../controllers/UsersController');
 
-router.get('/:id', usersController.getUserById);
-router.post('/update/:id', usersController.updateUser);
-router.post('/profile-pic/:id', usersController.uploadProfilePic);
-router.get('/public/:id', usersController.getPublicProfile);
+router.get('/:id', UsersController.getUserById);
+router.post('/update/:id', UsersController.updateUser);
+router.post('/profile-pic/:id', UsersController.uploadProfilePic);
+router.get('/public/:id', UsersController.getPublicProfile);
 
 module.exports = router;

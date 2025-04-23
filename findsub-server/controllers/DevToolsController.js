@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Job = require('../models/Job');
+console.log('📦 /controllers/DevToolsController.js mounted');
 
 exports.createTestUser = async (req, res) => {
   try {

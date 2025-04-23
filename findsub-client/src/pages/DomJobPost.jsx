@@ -1,229 +1,149 @@
-import React, { useState, useEffect } from 'react';
-import Select from 'react-select';
-import { useNavigate } from 'react-router-dom';
+// src/pages/DomJobPost.jsx
 
-function JobPost() {
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Select from 'react-select';
+import { useUser } from '../hooks/useUser';
+import { getAllKinks, createJob } from '../utils/api';
+
+function DomJobPost() {
+  const { user, isDom, isAuthenticated, isLoading } = useUser();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     location: '',
     compensation: '',
-    // Removed "duration" field.
     requirements: '',
-    category: '', // Selected from dropdown.
+    category: '',
     expiresAt: '',
     startDate: '',
     startTime: '',
     minDuration: '',
-    requiredKinks: [] // Array of kink IDs.
+    requiredKinks: []
   });
   const [kinksOptions, setKinksOptions] = useState([]);
   const [status, setStatus] = useState('');
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
 
-  // Fetch current user from localStorage to get posterId.
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      setUser(JSON.parse(stored));
+    if (!isLoading && (!isAuthenticated || !isDom)) {
+      navigate('/login');
     }
-  }, []);
+  }, [isLoading, isAuthenticated, isDom, navigate]);
 
-  // Fetch available kinks from backend.
   useEffect(() => {
-    fetch('http://localhost:5000/api/kinks')
-      .then(res => res.json())
-      .then(data => {
-        // Map each kink to an object for react-select.
-        const options = data.kinks.map(kink => ({
-          value: kink._id,
-          label: kink.name,
-          description: kink.description
-        }));
-        setKinksOptions(options);
-      })
-      .catch(err => {
+    const fetchKinks = async () => {
+      try {
+        const { kinks } = await getAllKinks();
+        setKinksOptions(
+          kinks.map(k => ({
+            value: k._id,
+            label: k.name,
+            description: k.description
+          }))
+        );
+      } catch (err) {
         console.error('Error fetching kinks:', err);
         setStatus('Error fetching kinks');
-      });
+      }
+    };
+    fetchKinks();
   }, []);
 
-  // Generic handler for text inputs.
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handler for the kinks dropdown.
-  const handleKinksChange = (selectedOptions) => {
+  const handleKinksChange = (selected) => {
     setFormData(prev => ({
       ...prev,
-      requiredKinks: selectedOptions ? selectedOptions.map(option => option.value) : []
+      requiredKinks: selected ? selected.map(s => s.value) : []
     }));
   };
 
-  // Handler for category dropdown.
-  const handleCategoryChange = (e) => {
-    setFormData(prev => ({ ...prev, category: e.target.value }));
-  };
-
-  // Allowed category options.
-  const categoryOptions = [
-    { value: 'Domestic Servitude', label: 'Domestic Servitude' },
-    { value: 'Footwear Cleaning', label: 'Footwear Cleaning' },
-    { value: 'Worship Sessions', label: 'Worship Sessions' },
-    { value: 'Meal Prep Service', label: 'Meal Prep Service' },
-    { value: 'Other', label: 'Other' }
-  ];
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      setStatus('User not logged in.');
-      return;
-    }
-    const jobData = {
-      ...formData,
-      posterId: user._id || user.id
-    };
 
-    // For debugging: log the jobData payload before sending.
-    console.log('JobData to submit:', jobData);
+    if (!user) return setStatus('User not logged in.');
 
     try {
-      const res = await fetch('http://localhost:5000/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(jobData)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatus('Job posted successfully.');
-        navigate('/jobs');
-      } else {
-        setStatus(`Error: ${data.message}`);
-        console.error('Error from server:', data);
-      }
-    } catch (error) {
-      console.error('Job post error:', error);
-      setStatus('Server error. Please try again.');
+      const payload = { ...formData, posterId: user._id || user.id };
+      const res = await createJob(payload);
+      setStatus('✅ Job posted successfully.');
+      navigate('/jobs');
+    } catch (err) {
+      console.error('Job post error:', err);
+      setStatus(`❌ ${err.message || 'Server error. Please try again.'}`);
     }
   };
 
+  if (isLoading || !user) return <p className="text-center mt-4">Loading job form...</p>;
+
   return (
-    <div>
-      <h2>Post a Job</h2>
-      {status && <p>{status}</p>}
-      <form onSubmit={handleSubmit}>
-        <label>
-          Title:<br />
-          <input 
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required 
-          />
-        </label>
-        <br />
-        <label>
-          Description:<br />
-          <textarea 
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            required 
-          />
-        </label>
-        <br />
-        <label>
-          Location:<br />
-          <input 
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-          />
-        </label>
-        <br />
-        <label>
-          Compensation:<br />
-          <input 
-            type="text"
-            name="compensation"
-            value={formData.compensation}
-            onChange={handleChange}
-          />
-        </label>
-        <br />
-        <label>
-          Requirements:<br />
-          <textarea 
-            name="requirements"
-            value={formData.requirements}
-            onChange={handleChange}
-          />
-        </label>
-        <br />
-        <label>
+    <div className="max-w-3xl mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">Post a Job</h2>
+      {status && <p className="mb-4">{status}</p>}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {[
+          ['Title', 'title'],
+          ['Description', 'description', true],
+          ['Location', 'location'],
+          ['Compensation', 'compensation'],
+          ['Requirements', 'requirements', true],
+          ['Expires At', 'expiresAt', false, 'date'],
+          ['Start Date', 'startDate', false, 'date'],
+          ['Start Time', 'startTime', false, 'time'],
+          ['Minimum Duration', 'minDuration']
+        ].map(([label, name, isTextarea, type]) => (
+          <label key={name} className="block">
+            {label}:<br />
+            {isTextarea ? (
+              <textarea
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                className="w-full border p-2"
+              />
+            ) : (
+              <input
+                type={type || 'text'}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                className="w-full border p-2"
+              />
+            )}
+          </label>
+        ))}
+
+        {/* Category Dropdown */}
+        <label className="block">
           Category:<br />
-          <select 
+          <select
             name="category"
             value={formData.category}
-            onChange={handleCategoryChange}
+            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
             required
+            className="w-full border p-2"
           >
             <option value="">Select Category</option>
-            {categoryOptions.map(option => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+            {[
+              'Domestic Servitude',
+              'Footwear Cleaning',
+              'Worship Sessions',
+              'Meal Prep Service',
+              'Other'
+            ].map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
         </label>
-        <br />
-        <label>
-          Expires At:<br />
-          <input 
-            type="date"
-            name="expiresAt"
-            value={formData.expiresAt}
-            onChange={handleChange}
-          />
-        </label>
-        <br />
-        <label>
-          Start Date:<br />
-          <input 
-            type="date"
-            name="startDate"
-            value={formData.startDate}
-            onChange={handleChange}
-            required 
-          />
-        </label>
-        <br />
-        <label>
-          Start Time:<br />
-          <input 
-            type="time"
-            name="startTime"
-            value={formData.startTime}
-            onChange={handleChange}
-          />
-        </label>
-        <br />
-        <label>
-          Minimum Duration:<br />
-          <input 
-            type="text"
-            name="minDuration"
-            value={formData.minDuration}
-            onChange={handleChange}
-          />
-        </label>
-        <br />
+
         {/* Required Kinks Dropdown */}
-        <label>
+        <label className="block">
           Required Kinks for Job:<br />
         </label>
         <Select
@@ -240,11 +160,13 @@ function JobPost() {
             </div>
           )}
         />
-        <br />
-        <button type="submit">Post Job</button>
+
+        <button type="submit" className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+          Post Job
+        </button>
       </form>
     </div>
   );
 }
 
-export default JobPost;
+export default DomJobPost;

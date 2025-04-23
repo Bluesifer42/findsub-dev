@@ -1,4 +1,5 @@
 const Feedback = require('../models/Feedback');
+console.log('📦 /controllers/FeedbackController.js mounted');
 
 exports.submitFeedback = async (req, res) => {
   try {

@@ -1,51 +1,53 @@
 // src/pages/AwaitingFeedback.jsx
+
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { getJobsAwaitingFeedback } from '../utils/api';
+import { useUser } from '../hooks/useUser';
 
 function AwaitingFeedback() {
+  const { user, isAuthenticated, isLoading } = useUser();
+  const navigate = useNavigate();
+
   const [jobs, setJobs] = useState([]);
   const [status, setStatus] = useState('');
-  const [user, setUser] = useState(null);
 
-  // Load current user.
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
-  }, []);
+    if (!isLoading && !isAuthenticated) navigate('/login');
+  }, [isLoading, isAuthenticated, navigate]);
 
-  // Fetch jobs awaiting feedback for the current user.
   useEffect(() => {
-    if (user) {
-      // We assume an endpoint exists that returns jobs awaiting feedback.
-      fetch(`http://localhost:5000/api/jobs/awaiting-feedback/${user.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setJobs(data.jobs || []);
-        })
-        .catch((err) => {
-          console.error('Error fetching awaiting feedback jobs:', err);
-          setStatus('Failed to load jobs awaiting feedback.');
-        });
-    }
+    if (!user) return;
+
+    (async () => {
+      try {
+        const { jobs } = await getJobsAwaitingFeedback(user.id);
+        setJobs(jobs || []);
+      } catch (err) {
+        console.error('Error fetching awaiting feedback jobs:', err);
+        setStatus('Failed to load jobs awaiting feedback.');
+      }
+    })();
   }, [user]);
 
+  if (isLoading || !user) return <p className="text-center mt-4">Loading feedback queue...</p>;
+
   return (
-    <div>
-      <h2>Jobs Awaiting Feedback</h2>
-      {status && <p>{status}</p>}
+    <div className="max-w-3xl mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">Jobs Awaiting Feedback</h2>
+      {status && <p className="text-red-600 mb-2">{status}</p>}
+
       {jobs.length === 0 ? (
         <p>No jobs awaiting feedback.</p>
       ) : (
         jobs.map((job) => (
-          <div key={job._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-            <h3>
-              <Link to={`/job/${job._id}`}>{job.title}</Link>
+          <div key={job._id} className="border p-4 mb-4 rounded shadow-sm">
+            <h3 className="font-semibold text-lg">
+              <Link to={`/job/${job._id}`} className="text-blue-600 hover:underline">
+                {job.title}
+              </Link>
             </h3>
-            <p>
-              <strong>Status:</strong> {job.status}
-            </p>
+            <p><strong>Status:</strong> {job.status}</p>
           </div>
         ))
       )}

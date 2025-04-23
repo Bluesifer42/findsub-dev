@@ -10,105 +10,115 @@ function PublicProfile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load user info
-    fetch(`http://localhost:5000/api/user/${userId}`)
-      .then(res => res.json())
-      .then(data => setUser(data.user))
-      .catch(err => console.error('User load error:', err));
-
-    // Load feedback
-    fetch(`http://localhost:5000/api/feedback/user/${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        const fb = data.feedback;
-        setFeedback(fb);
-        processRatings(fb);
-        processBadges(fb);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Feedback load error:', err);
-        setLoading(false);
-      });
+    fetchUserData();
+    fetchFeedbackData();
   }, [userId]);
 
+  const fetchUserData = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/user/${userId}`);
+      const data = await res.json();
+      setUser(data.user);
+    } catch (err) {
+      console.error('User load error:', err);
+    }
+  };
+
+  const fetchFeedbackData = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/feedback/user/${userId}`);
+      const data = await res.json();
+      setFeedback(data.feedback || []);
+      processRatings(data.feedback || []);
+      processBadges(data.feedback || []);
+    } catch (err) {
+      console.error('Feedback load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const processRatings = (feedbackArray) => {
-    const tally = {};
-    const counts = {};
-    feedbackArray.forEach(f => {
-      if (f.generalRatings) {
-        for (let key in f.generalRatings) {
-          tally[key] = (tally[key] || 0) + f.generalRatings[key];
+    const tally = {}, counts = {};
+    feedbackArray.forEach(fb => {
+      if (fb.generalRatings) {
+        Object.entries(fb.generalRatings).forEach(([key, val]) => {
+          tally[key] = (tally[key] || 0) + val;
           counts[key] = (counts[key] || 0) + 1;
-        }
+        });
       }
     });
-    const avg = {};
-    for (let key in tally) {
-      avg[key] = (tally[key] / counts[key]).toFixed(1);
-    }
-    setRatingAverages(avg);
+    const averages = {};
+    Object.keys(tally).forEach(key => {
+      averages[key] = (tally[key] / counts[key]).toFixed(1);
+    });
+    setRatingAverages(averages);
   };
 
   const processBadges = (feedbackArray) => {
     const summary = {};
-    feedbackArray.forEach(f => {
-      if (f.badgeGifting) {
-        for (let kinkId in f.badgeGifting) {
-          summary[kinkId] = (summary[kinkId] || 0) + f.badgeGifting[kinkId];
-        }
+    feedbackArray.forEach(fb => {
+      if (fb.badgeGifting) {
+        Object.entries(fb.badgeGifting).forEach(([kinkId, count]) => {
+          summary[kinkId] = (summary[kinkId] || 0) + count;
+        });
       }
     });
     setBadgeSummary(summary);
   };
 
-  if (loading) return <p>Loading profile...</p>;
-  if (!user) return <p>User not found.</p>;
+  if (loading) return <p className="text-center">Loading profile...</p>;
+  if (!user) return <p className="text-center text-red-600">User not found.</p>;
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <h2>{user.username}'s Profile</h2>
+    <div className="max-w-3xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-2">{user.username}'s Profile</h2>
       <p><strong>Role:</strong> {user.role}</p>
       <p><strong>Experience:</strong> {user.experienceLevel}</p>
 
-      <h3>Trust & Performance</h3>
-      {Object.keys(ratingAverages).length === 0 ? (
-        <p>No ratings yet.</p>
-      ) : (
-        <ul>
-          {Object.entries(ratingAverages).map(([trait, avg]) => (
-            <li key={trait}><strong>{trait}:</strong> {avg} / 5</li>
-          ))}
-        </ul>
-      )}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold">⭐ Trust & Performance</h3>
+        {Object.keys(ratingAverages).length === 0 ? (
+          <p className="text-gray-600">No ratings yet.</p>
+        ) : (
+          <ul className="list-disc ml-5 mt-2">
+            {Object.entries(ratingAverages).map(([key, avg]) => (
+              <li key={key}><strong>{key}:</strong> {avg} / 5</li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {Object.keys(badgeSummary).length > 0 && (
-        <>
-          <h3>Kink Badges Earned</h3>
-          <ul>
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold">🎖 Kink Badges Earned</h3>
+          <ul className="list-disc ml-5 mt-2">
             {Object.entries(badgeSummary).map(([kinkId, count]) => (
               <li key={kinkId}>
                 <strong>Kink {kinkId}:</strong> {count} badge{count > 1 ? 's' : ''}
               </li>
             ))}
           </ul>
-        </>
+        </div>
       )}
 
-      <h3>Feedback Received</h3>
-      {feedback.length === 0 ? (
-        <p>No feedback yet.</p>
-      ) : (
-        feedback.map((f, i) => (
-          <div key={i} style={{ borderBottom: '1px solid #ccc', marginBottom: '1rem', paddingBottom: '0.5rem' }}>
-            <p>
-              From: <Link to={`/profile/${f.fromUser._id}`}>{f.fromUser.username}</Link> ({f.fromUser.role})
-            </p>
-            {f.comment && <p><em>"{f.comment}"</em></p>}
-            {f.honestyScore && <p>Honesty: {f.honestyScore}/5</p>}
-          </div>
-        ))
-      )}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold">📝 Feedback Received</h3>
+        {feedback.length === 0 ? (
+          <p>No feedback yet.</p>
+        ) : (
+          feedback.map((f, i) => (
+            <div key={i} className="border-b pb-2 mb-3">
+              <p>
+                From: <Link to={`/profile/${f.fromUser._id}`} className="text-blue-600 hover:underline">
+                  {f.fromUser.username}</Link> ({f.fromUser.role})
+              </p>
+              {f.comment && <p className="italic">"{f.comment}"</p>}
+              {f.honestyScore !== undefined && <p>Honesty: {f.honestyScore}/5</p>}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

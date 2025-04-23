@@ -1,5 +1,6 @@
 const Job = require('../models/Job');
 const User = require('../models/User');
+console.log('📦 /controllers/JobsController.js mounted');
 
 exports.createJob = async (req, res) => {
   try {
