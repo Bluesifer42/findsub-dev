@@ -1,6 +1,18 @@
-const Job = require('../models/Job');
-const User = require('../models/User');
+// /controllers/JobsController.js
+
 console.log('📦 /controllers/JobsController.js mounted');
+
+const Job = require('../models/Job');
+
+// ✅ Get all jobs
+exports.getAllJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({});
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch jobs' });
+  }
+};
 
 exports.createJob = async (req, res) => {
   try {
@@ -68,6 +80,31 @@ exports.getFilledJobs = async (req, res) => {
     res.json(jobs);
   } catch (error) {
     res.status(500).json({ error: 'Failed to get filled jobs' });
+  }
+};
+
+// Optional additional route handlers
+exports.getJobHistory = async (req, res) => {
+  try {
+    const jobs = await Job.find({
+      $or: [
+        { postedBy: req.params.userId },
+        { selected: req.params.userId },
+        { applicants: req.params.userId },
+      ],
+    });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get job history' });
+  }
+};
+
+exports.getMyJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ postedBy: req.params.userId });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get my jobs' });
   }
 };
 

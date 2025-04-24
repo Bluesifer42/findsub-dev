@@ -1,14 +1,17 @@
-// /components/NavBar.jsx
+// /src/components/NavBar.jsx
 
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/useAuth';
 
-function NavBar({ user, setUser }) {
+function NavBar() {
+  const { user, logout } = useAuth(); // ✅ Clean access
   const navigate = useNavigate();
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    navigate('/login');
+  const handleLogout = () => {
+    logout();
+    setTimeout(() => {
+      navigate('/login');
+    }, 100); // 100ms delay
   };
 
   return (
@@ -22,7 +25,7 @@ function NavBar({ user, setUser }) {
           <>
             <span className="text-sm">{user.username}</span>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
             >
               Logout

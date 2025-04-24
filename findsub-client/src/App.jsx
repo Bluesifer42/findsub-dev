@@ -1,8 +1,9 @@
-// src/app.jsx
+// src/App.jsx
 
-import React, { useContext } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { UserContext, UserProvider } from './context/UserContext';
+import { UserProvider } from './context/UserContext';
+import { useAuth } from './context/useAuth';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -32,7 +33,7 @@ import DashboardSub from './dashboards/Sub';
 import DashboardSwitch from './dashboards/Switch';
 
 const AppContent = () => {
-  const { user } = useContext(UserContext);
+  const { user, logout } = useAuth(); // ✅ use correct logout here
 
   return (
     <Router>
@@ -46,8 +47,8 @@ const AppContent = () => {
                 <button
                   className="logout-btn"
                   onClick={() => {
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
+                    logout(); // ✅ properly clears token and user
+                    window.location.href = '/login'; // ✅ full redirect
                   }}
                 >
                   Logout

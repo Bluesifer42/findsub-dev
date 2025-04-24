@@ -27,7 +27,7 @@ const {
 
 // Mount API Routes
 app.use('/api/jobs', JobsRoutes);
-app.use('/api/user', UsersRoutes);
+app.use('/api/users', UsersRoutes);
 app.use('/api/feedback', FeedbackRoutes);
 app.use('/api/kinks', AdminRoutes);
 app.use('/api/devtools', DevToolsRoutes);

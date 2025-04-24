@@ -4,9 +4,11 @@ console.log('📦 /routes/AuthRoutes.js mounted');
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const verifyToken = require('../middlewares/verifyToken'); // ✅ NEW
 
-router.post('/register', authController.registerUser); // becomes /api/auth/register
-router.post('/login', authController.loginUser);       // becomes /api/auth/login
-router.get('/me', authController.getCurrentUser);      // becomes /api/auth/me
+router.post('/register', authController.registerUser);
+router.post('/login', authController.loginUser);
+router.get('/me', verifyToken, authController.getCurrentUser); // ✅ Protected route
 
 module.exports = router;
+

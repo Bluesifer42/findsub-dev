@@ -87,12 +87,12 @@ export const getAllAdminJobs = () => request('get', '/admin/jobs');
 export const getJobsByPoster = (posterId) => request('get', `/jobs?view=poster&posterId=${posterId}`);
 export const getDomJobHistory = (domId) => request('get', `/jobs/history/${domId}`);
 export const getJobsAwaitingFeedback = (userId) => request('get', `/jobs/awaiting-feedback/${userId}`);
-export const getJobById = (id) => request('get', `/job/${id}`);
+export const getJobById = (id) => request('get', `/jobs/${id}`);
 
 export const createJob = (jobData) => request('post', '/jobs', jobData);
 export const deleteJob = (jobId) => request('delete', `/jobs/delete/${jobId}`);
 export const updateJobStatus = ({ jobId, newStatus }) =>
-  request('post', '/jobs/status', { jobId, newStatus });
+  request('post', `/jobs/status/${jobId}`, { status: newStatus });
 
 export const selectApplicant = ({ jobId, applicantId }) =>
   request('post', '/jobs/select', { jobId, applicantId });

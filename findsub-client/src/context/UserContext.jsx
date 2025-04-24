@@ -1,4 +1,4 @@
-// src/context/UserContext.jsx
+// /src/context/UserContext.jsx
 
 import { createContext, useState, useEffect } from 'react';
 
@@ -9,7 +9,12 @@ export const UserProvider = ({ children }) => {
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (stored) setUser(JSON.parse(stored));
+    if (stored) {
+      console.log('📦 [UserContext] Loaded user from localStorage:', JSON.parse(stored));
+      setUser(JSON.parse(stored));
+    } else {
+      console.log('🕳 [UserContext] No user found in localStorage');
+    }
   }, []);
 
   return (

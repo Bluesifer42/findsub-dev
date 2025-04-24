@@ -15,12 +15,19 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setStatus('Logging in...');
-
+  
     try {
-      const { user } = await loginUser(email, password);
+      const { user, token } = await loginUser(email, password);
+  
+      // ✅ Save token for future API requests
+      localStorage.setItem('token', token);
+      console.log('🔐 [Login] Token saved to localStorage:', token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
-
+  
+      setStatus('✅ Login successful');
+  
+      // ✅ Redirect based on role
       if (user.isAdmin) navigate('/admin');
       else if (user.role === 'Dom') navigate('/dashboard/dom');
       else if (user.role === 'Sub') navigate('/dashboard/sub');
@@ -30,6 +37,7 @@ function Login() {
       setStatus(`❌ ${err.message || 'Invalid credentials'}`);
     }
   };
+  
 
   return (
     <div className="max-w-md mx-auto p-4">
