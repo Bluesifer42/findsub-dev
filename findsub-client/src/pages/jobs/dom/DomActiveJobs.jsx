@@ -1,11 +1,16 @@
-// src/pages/DomActiveJobs.jsx
+// File: src/pages/jobs/dom/DomActiveJobs.jsx
+// Purpose: Display Dom’s active jobs with embedded job detail support
+// Standards:
+// - Uses camelCase
+// - Accepts onSelectJob for in-tab detail rendering
+// - No navigation away from JobsHub
 
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../hooks/useUser';
-import { getJobsByPoster } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from "../../../hooks/useUser";
+import { getJobsByPoster } from '../../../utils/api';
 
-function DomActiveJobs() {
+function DomActiveJobs({ onSelectJob }) {
   const { user, isDom, isLoading, isAuthenticated } = useUser();
   const [jobs, setJobs] = useState([]);
   const [status, setStatus] = useState('');
@@ -25,7 +30,7 @@ function DomActiveJobs() {
         const { jobs: allJobs } = await getJobsByPoster(user._id || user.id);
         const active = allJobs.filter(job =>
           job.selectedApplicant &&
-          job.posterId._id === (user._id || user.id) &&
+          (job.posterId === user._id || job.posterId?._id === user._id) &&
           (
             (job.status === 'filled' && !job.completedOn) ||
             (job.status === 'completed' && job.domFeedbackLeft === false)
@@ -34,6 +39,7 @@ function DomActiveJobs() {
         setJobs(active);
       } catch (err) {
         setStatus('❌ Failed to load active jobs.');
+        console.error('[DomActiveJobs] Error loading jobs:', err);
       }
     })();
   }, [user, isDom]);
@@ -55,9 +61,12 @@ function DomActiveJobs() {
         jobs.map(job => (
           <div key={job._id} className="border p-4 mb-4 rounded shadow-sm">
             <h3 className="text-lg font-semibold">
-              <Link to={`/job/${job._id}`} className="text-blue-600 hover:underline">
+              <span
+                onClick={() => onSelectJob?.(job._id)}
+                className="text-blue-600 hover:underline cursor-pointer"
+              >
                 {job.title}
-              </Link>
+              </span>
             </h3>
             <p>{job.description}</p>
             <p><strong>Selected Sub:</strong> {job.selectedApplicant?.username}</p>

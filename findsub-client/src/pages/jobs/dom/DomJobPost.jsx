@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
-import { useUser } from '../hooks/useUser';
-import { getAllKinks, createJob } from '../utils/api';
+import { useUser } from '../../../hooks/useUser';
+import { getAllKinks, createJob } from '../../../utils/api';
 
 function DomJobPost() {
   const { user, isDom, isAuthenticated, isLoading } = useUser();
@@ -35,21 +35,28 @@ function DomJobPost() {
   useEffect(() => {
     const fetchKinks = async () => {
       try {
-        const { kinks } = await getAllKinks();
-        setKinksOptions(
-          kinks.map(k => ({
-            value: k._id,
-            label: k.name,
-            description: k.description
-          }))
-        );
+        const kinkData = await getAllKinks();
+        if (Array.isArray(kinkData)) {
+          setKinksOptions(
+            kinkData.map(k => ({
+              value: k._id,
+              label: k.name,
+              description: k.description
+            }))
+          );
+        } else {
+          console.warn('⚠️ getAllKinks did not return an array:', kinkData);
+          setKinksOptions([]);
+        }
       } catch (err) {
         console.error('Error fetching kinks:', err);
         setStatus('Error fetching kinks');
+        setKinksOptions([]);
       }
     };
+  
     fetchKinks();
-  }, []);
+  }, []);  
 
   const handleChange = (e) => {
     const { name, value } = e.target;

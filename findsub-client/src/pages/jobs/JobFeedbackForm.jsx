@@ -1,12 +1,12 @@
-// src/pages/FeedbackForm.jsx
+// src/pages/jobs/FeedbackForm.jsx
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import DomFeedbackFields from './DomFeedbackFields';
+import DomFeedbackFields from './DomJobFeedbackFields';
 import SubFeedbackFields from './SubFeedbackFields';
-import SharedFeedbackFields from './SharedFeedbackFields';
-import { useUser } from '../hooks/useUser';
-import { getJobById, submitFeedback } from '../utils/api';
+import SharedFeedbackFields from './SharedJobFeedbackFields';
+import { useUser } from '../../hooks/useUser';
+import { getJobById, submitFeedback } from '../../utils/api';
 
 function FeedbackForm() {
   const { user, isAuthenticated, isLoading } = useUser();

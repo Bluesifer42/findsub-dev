@@ -1,4 +1,4 @@
-// src/pages/DomFeedbackFields.jsx
+// src/pages/jobs/DomJobFeedbackFields.jsx
 
 function DomFeedbackFields({ setGeneralRatings, setInterestRatings, setBadgeGifting, requiredKinks }) {
   const handleRatingChange = (field, value, setter) => {

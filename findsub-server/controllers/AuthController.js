@@ -1,10 +1,15 @@
+// 📦 /controllers/AuthController.js
 console.log('📦 /controllers/AuthController.js mounted');
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// 🔐 Login: Check credentials, return JWT
+/**
+ * @route   POST /api/auth/login
+ * @desc    Authenticate user, return JWT and user object
+ * @access  Public
+ */
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -15,14 +20,12 @@ exports.loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // 🧠 Sign a token with the user ID and role
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // 🚫 Never send hashed password back
     const safeUser = {
       _id: user._id,
       username: user.username,
@@ -46,7 +49,11 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// 🧾 Registration
+/**
+ * @route   POST /api/auth/register
+ * @desc    Register a new user
+ * @access  Public
+ */
 exports.registerUser = async (req, res) => {
   try {
     const {
@@ -76,7 +83,6 @@ exports.registerUser = async (req, res) => {
 
     await user.save();
 
-    // 🚫 Exclude password from response
     const safeUser = {
       _id: user._id,
       username: user.username,
@@ -96,7 +102,11 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// 🧠 Get current user
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get authenticated user's data
+ * @access  Private (requires JWT)
+ */
 exports.getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');

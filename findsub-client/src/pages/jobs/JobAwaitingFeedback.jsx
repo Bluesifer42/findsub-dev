@@ -1,11 +1,18 @@
-// src/pages/AwaitingFeedback.jsx
+// File: /src/pages/jobs/JobAwaitingFeedback.jsx
+// Purpose: Show all jobs awaiting feedback from the currently logged-in user (Dom or Sub).
+// Standards:
+// - Uses camelCase
+// - Console logging included for fetch debugging
+// - Defensive auth redirect if user is not logged in
+// - Centralized API call from /utils/api.js
+// - Role-agnostic; supports both Dom and Sub
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getJobsAwaitingFeedback } from '../utils/api';
-import { useUser } from '../hooks/useUser';
+import { getJobsAwaitingFeedback } from '../../utils/api';
+import { useUser } from '../../hooks/useUser';
 
-function AwaitingFeedback() {
+function JobAwaitingFeedback() {
   const { user, isAuthenticated, isLoading } = useUser();
   const navigate = useNavigate();
 
@@ -13,7 +20,10 @@ function AwaitingFeedback() {
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) navigate('/login');
+    if (!isLoading && !isAuthenticated) {
+      console.warn('[JobAwaitingFeedback] User not authenticated, redirecting to login');
+      navigate('/login');
+    }
   }, [isLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -21,10 +31,12 @@ function AwaitingFeedback() {
 
     (async () => {
       try {
+        console.log('[JobAwaitingFeedback] Fetching jobs awaiting feedback for user:', user.id);
         const { jobs } = await getJobsAwaitingFeedback(user.id);
         setJobs(jobs || []);
+        console.log('[JobAwaitingFeedback] Jobs received:', jobs);
       } catch (err) {
-        console.error('Error fetching awaiting feedback jobs:', err);
+        console.error('[JobAwaitingFeedback] Error fetching jobs:', err);
         setStatus('Failed to load jobs awaiting feedback.');
       }
     })();
@@ -55,4 +67,4 @@ function AwaitingFeedback() {
   );
 }
 
-export default AwaitingFeedback;
+export default JobAwaitingFeedback;

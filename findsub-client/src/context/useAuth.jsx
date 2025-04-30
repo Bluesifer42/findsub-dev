@@ -7,7 +7,6 @@ export const useAuth = () => {
   const { user, setUser } = useContext(UserContext);
 
   const logout = () => {
-    alert('👋 Logout function is running!');
     console.log('🚪 [Logout] Removing user and token...');
     console.log('📦 Token before removal:', localStorage.getItem('token'));
 
@@ -15,10 +14,7 @@ export const useAuth = () => {
     localStorage.removeItem('token');
     setUser(null);
 
-    console.log('🧹 Token after removal:', localStorage.getItem('token'));
-
-    // Force visual change
-    document.body.style.backgroundColor = 'black';
+    console.log('🧹 Token after removal:', localStorage.getItem('token')); // Should log null
   };
 
   return { user, setUser, logout };

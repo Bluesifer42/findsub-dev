@@ -1,13 +1,23 @@
-// src/utils/api.js
+// File: /src/utils/api.js
+// Purpose: Centralized API request handling and endpoints for FindSub frontend
+// Standards:
+// - Uses camelCase
+// - Centralized error handling
+// - No alert(), use toast at call sites
+// - Returns raw response data (res.data)
+// - Fully modular exports
+// - No duplicated routes
+// - Console logs API errors
 
 import React from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api';
 
-
+// ✅ Retrieve token for auth-protected routes
 const getToken = () => localStorage.getItem('token');
 
+// ✅ General request wrapper
 const request = async (method, url, data = null) => {
   try {
     const headers = {};
@@ -86,6 +96,7 @@ export const getAllJobs = () => request('get', '/jobs');
 export const getAllAdminJobs = () => request('get', '/admin/jobs');
 export const getJobsByPoster = (posterId) => request('get', `/jobs?view=poster&posterId=${posterId}`);
 export const getDomJobHistory = (domId) => request('get', `/jobs/history/${domId}`);
+export const getFilledJobs = (userId) => request('get', `/jobs/filled/${userId}`);
 export const getJobsAwaitingFeedback = (userId) => request('get', `/jobs/awaiting-feedback/${userId}`);
 export const getJobById = (id) => request('get', `/jobs/${id}`);
 
@@ -101,13 +112,14 @@ export const selectApplicant = ({ jobId, applicantId }) =>
 // 🙋 Applications
 // ========================
 export const getApplicationsForJob = (jobId) =>
-  request('get', `/applications/${jobId}`);
+  request('get', `/applications/${jobId}`); // NEW ROUTE handled by ApplicationRoutes.js
 
 export const applyToJob = ({ jobId, applicantId, coverLetter }) =>
-  request('post', '/apply', { jobId, applicantId, coverLetter });
+  request('post', '/applications', { jobId, applicantId, coverLetter }); // POST to create application
 
 export const retractApplication = (jobId, userId) =>
-  request('delete', `/apply/${jobId}/${userId}`);
+  request('delete', `/applications/${jobId}/${userId}`); // DELETE individual application
+
 
 // ========================
 // 🗣 Feedback

@@ -1,7 +1,15 @@
+// File: /src/pages/jobs/JobDetail.jsx
+// Purpose: Display details for a single job, either standalone or embedded in JobsHub.
+// Standards:
+// - Accepts props: jobId, onClose
+// - Centralized API from /utils/api.js
+// - Uses toast, console logging, defensive null checks
+// - Works in both routed or inline-tab view modes
+
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import FeedbackForm from './FeedbackForm';
-import { useUser } from '../hooks/useUser';
+import FeedbackForm from './JobFeedbackForm';
+import { useUser } from '../../hooks/useUser';
 import {
   getJobById,
   getFeedbackForJob,
@@ -11,11 +19,14 @@ import {
   updateJobStatus,
   deleteJob,
   selectApplicant
-} from '../utils/api';
+} from '../../utils/api';
+import { toast } from 'react-hot-toast';
 
-function JobDetail() {
-  const { user, isAuthenticated, isLoading } = useUser();
-  const { jobId } = useParams();
+function JobDetail({ jobId: propJobId, onClose }) {
+  const { jobId: routeJobId } = useParams();
+  const jobId = propJobId || routeJobId;
+
+  const { user, isLoading } = useUser();
   const navigate = useNavigate();
 
   const [job, setJob] = useState(null);
@@ -25,60 +36,72 @@ function JobDetail() {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [status, setStatus] = useState('');
 
+  // Fetch job details
   useEffect(() => {
+    if (!jobId) return;
     (async () => {
+      console.log('[JobDetail DEBUG] Fetching job by ID:', jobId);
       try {
         const { job } = await getJobById(jobId);
+        console.log('[JobDetail DEBUG] Job data received:', job);
         setJob(job);
-      } catch {
+      } catch (err) {
+        console.error('[JobDetail] Failed to fetch job:', err);
+        toast.error('❌ Failed to load job details.');
         setStatus('❌ Failed to load job details.');
       }
     })();
   }, [jobId]);
 
+  // Fetch feedback and applications
   useEffect(() => {
-    if (!user) return;
-
+    if (!user || !jobId) return;
     (async () => {
+      console.log('[JobDetail DEBUG] Fetching feedback/applications for job:', jobId);
       try {
         const { feedback } = await getFeedbackForJob(jobId);
-        setFeedback(feedback);
-
         const { applications } = await getApplicationsForJob(jobId);
-        setApplications(applications);
+        const applied = applications.some(app => app.applicantId._id === user._id);
+        console.log('[JobDetail DEBUG] Feedback:', feedback);
+        console.log('[JobDetail DEBUG] Applications:', applications);
+        console.log('[JobDetail DEBUG] User has applied:', applied);
 
-        const applied = applications.some(app => app.applicantId._id === (user._id || user.id));
+        setFeedback(feedback);
+        setApplications(applications);
         setHasApplied(applied);
       } catch (err) {
-        console.error('Error fetching feedback or applications:', err);
+        console.error('[JobDetail] Error loading related data:', err);
+        toast.error('❌ Error loading feedback or applications.');
       }
     })();
-  }, [jobId, user]);
+  }, [user, jobId]);
 
   const handleApply = async () => {
     const confirmed = window.confirm('Do you want to apply for this job?');
     if (!confirmed) return;
 
     const cover = prompt('Optional: Add a message (or leave blank):');
-    if (cover === null) return alert('Application cancelled.');
+    if (cover === null) return toast('Application cancelled.');
 
     try {
-      await applyToJob({ jobId, applicantId: user._id || user.id, coverLetter: cover.trim() });
-      alert('✅ Application submitted!');
+      await applyToJob({ jobId, applicantId: user._id, coverLetter: cover.trim() });
+      toast.success('✅ Application submitted!');
       setHasApplied(true);
     } catch (err) {
-      alert(`❌ ${err.message}`);
+      console.error('[JobDetail] Failed to apply:', err);
+      toast.error(`❌ ${err.message}`);
     }
   };
 
   const handleRetract = async () => {
     if (!window.confirm('Retract your application?')) return;
     try {
-      await retractApplication(jobId, user._id || user.id);
+      await retractApplication(jobId, user._id);
+      toast.success('✅ Application retracted.');
       setHasApplied(false);
-      alert('✅ Application retracted.');
     } catch (err) {
-      alert(`❌ ${err.message}`);
+      console.error('[JobDetail] Failed to retract application:', err);
+      toast.error(`❌ ${err.message}`);
     }
   };
 
@@ -86,10 +109,11 @@ function JobDetail() {
     if (!window.confirm('Are you sure you want to delete this job?')) return;
     try {
       await deleteJob(jobId);
-      alert('✅ Job deleted.');
+      toast.success('✅ Job deleted.');
       navigate('/jobs');
     } catch (err) {
-      alert('❌ Error deleting job.');
+      console.error('[JobDetail] Delete error:', err);
+      toast.error('❌ Error deleting job.');
     }
   };
 
@@ -97,9 +121,11 @@ function JobDetail() {
     if (!window.confirm(`Mark this job as ${newStatus}?`)) return;
     try {
       await updateJobStatus({ jobId, newStatus });
+      toast.success(`✅ Job marked as ${newStatus}`);
       window.location.reload();
     } catch (err) {
-      alert('❌ Failed to update job status.');
+      console.error('[JobDetail] Status update failed:', err);
+      toast.error('❌ Failed to update job status.');
     }
   };
 
@@ -107,15 +133,16 @@ function JobDetail() {
     if (!window.confirm('Select this applicant for the job?')) return;
     try {
       await selectApplicant({ jobId, applicantId });
-      alert('✅ Sub selected.');
+      toast.success('✅ Sub selected.');
       window.location.reload();
     } catch (err) {
-      alert('❌ Failed to select applicant.');
+      console.error('[JobDetail] Failed to select applicant:', err);
+      toast.error('❌ Failed to select applicant.');
     }
   };
 
   const handleFeedbackClick = () => {
-    if (!job?.selectedApplicant) return alert('No applicant selected yet.');
+    if (!job?.selectedApplicant) return toast.error('No applicant selected yet.');
     setShowFeedbackForm(true);
   };
 
@@ -135,13 +162,18 @@ function JobDetail() {
   if (isLoading || !job) return <p>Loading job details...</p>;
   if (status) return <p>{status}</p>;
 
-  const isPoster = user?._id === job.posterId._id || user?.id === job.posterId._id;
+  const isPoster = user?._id === job.posterId._id;
 
   return (
-    <div className="max-w-5xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-2">
-        <Link to={`/job/${job._id}`}>{job.title}</Link>
-      </h2>
+    <div className="max-w-5xl mx-auto p-4 border rounded shadow bg-white">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-2xl font-bold">
+          <Link to={`/job/${job._id}`}>{job.title}</Link>
+        </h2>
+        {onClose && (
+          <button onClick={onClose} className="text-sm text-red-600 hover:underline">✖ Close</button>
+        )}
+      </div>
 
       <p><strong>Description:</strong> {job.description}</p>
       <p><strong>Location:</strong> {job.location}</p>
@@ -157,15 +189,18 @@ function JobDetail() {
           <strong>Required Kinks:</strong>
           <ul className="list-disc pl-6">
             {job.requiredKinks.map(k => (
-              <li key={k._id}>
-                {k.name}
-                {k.description && <span className="text-sm text-gray-600"> – {k.description}</span>}
+              <li key={typeof k === 'string' ? k : k._id}>
+                {typeof k === 'string' ? k : k.name}
+                {typeof k !== 'string' && k.description && (
+                  <span className="text-sm text-gray-600"> – {k.description}</span>
+                )}
               </li>
             ))}
           </ul>
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className="mt-6 space-x-4">
         {user && user.role === 'Dom' && isPoster && (
           <>
@@ -227,7 +262,7 @@ function JobDetail() {
         )}
       </div>
 
-      {/* Applicant Section */}
+      {/* Applicants for Dom */}
       {user?.role === 'Dom' && isPoster && (
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-2">Applicants</h3>
@@ -256,7 +291,7 @@ function JobDetail() {
         <div className="mt-8">
           <FeedbackForm
             jobId={job._id}
-            fromUser={user.id}
+            fromUser={user._id}
             toUser={job.selectedApplicant}
             role={user.role}
             targetInterests={

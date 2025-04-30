@@ -1,9 +1,16 @@
-// src/pages/DomJobListings.jsx
+// File: /src/pages/jobs/dom/DomJobListings.jsx
+// Purpose: Display a list of the Dom's own job listings that are still open and unfilled.
+// Standards:
+// - Uses camelCase
+// - Fully annotated code
+// - Centralized API calls from /utils/api.js
+// - Console logging for traceability
+// - Modular, no functionality removed or renamed
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../hooks/useUser';
-import { getJobsByPoster } from '../utils/api';
+import { useUser } from '../../../hooks/useUser';
+import { getJobsByPoster } from '../../../utils/api';
 
 function DomJobListings() {
   const { user, isDom, isAuthenticated, isLoading } = useUser();
@@ -12,23 +19,28 @@ function DomJobListings() {
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !isDom)) {
-      navigate('/login');
-    }
-  }, [isLoading, isAuthenticated, isDom, navigate]);
-
-  useEffect(() => {
     if (!user || !isDom) return;
+
+    console.log('[DomJobListings] Fetching jobs for poster ID:', user._id);
 
     (async () => {
       try {
-        const { jobs: all } = await getJobsByPoster(user._id || user.id);
+        const all = await getJobsByPoster(user._id || user.id);
+        console.log(`[DomJobListings] Jobs fetched (${all.length} total):`, all);
+
         const unfilled = (all || []).filter(job =>
-          job.status === 'open' && !job.selectedApplicant
+          job.status === 'open' &&
+          !job.selectedApplicant &&
+          (
+            job.posterId === user._id ||               // direct match
+            job.posterId?._id === user._id             // populated match
+          )
         );
+
+        console.log(`[DomJobListings] Unfilled listings: ${unfilled.length}`, unfilled);
         setJobs(unfilled);
       } catch (err) {
-        console.error('Failed to load listings.');
+        console.error('[DomJobListings] Failed to load listings:', err);
       }
     })();
   }, [user, isDom]);

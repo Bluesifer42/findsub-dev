@@ -1,32 +1,46 @@
-// /routes/JobsRoutes.js
+// File: /routes/JobsRoutes.js
+// Purpose: Manage all job-related route paths (public, poster, applicant actions)
+// Standards:
+// - Uses camelCase
+// - Fully annotated
+// - Follows RESTful structure
+// - Centralized error handling
+// - Console logs on file load
 
 console.log('📦 /routes/JobsRoutes.js mounted');
 
 const express = require('express');
 const router = express.Router();
-const jobsController = require('../controllers/jobsController');
+const JobsController = require('../controllers/JobsController');
 
-// ✅ General Jobs
-router.get('/', jobsController.getAllJobs); // /api/jobs
-router.post('/', jobsController.createJob); // /api/jobs
+// ✅ Public Jobs
+router.get('/', JobsController.getAllJobs);
+router.post('/', JobsController.createJob);
 
-// ✅ Specific user-based queries (must be BEFORE :id)
-router.get('/user/:userId', jobsController.getUserJobs); // jobs posted by user
-router.get('/applied/:userId', jobsController.getAppliedJobs); // jobs user applied to
-router.get('/filled/:userId', jobsController.getFilledJobs); // jobs user was selected for
+// ✅ Single Job
+router.get('/:id', JobsController.getJobById);
+router.put('/:id', JobsController.editJob);
 
-// ✅ Job history (optional)
-router.get('/history/:userId', jobsController.getJobHistory); // if used
-router.get('/my-jobs/:userId', jobsController.getMyJobs); // if used
+// ✅ Poster job list view (for manage listings)
+router.get('/poster', JobsController.getJobsByPoster);
+
+// ✅ Dom / Poster job history
+router.get('/history/:domId', JobsController.getDomJobHistory);
+
+// ✅ Jobs awaiting feedback
+router.get('/awaiting-feedback/:userId', JobsController.getJobsAwaitingFeedback);
+
+// ✅ Sub accepted jobs (filled and completed)
+router.get('/filled/:userId', JobsController.getFilledJobsForUser);
+
+// ✅ (NEW) Get applications for a job
+router.get('/applications/:jobId', JobsController.getApplicationsForJob);
 
 // ✅ Actions
-router.post('/apply/:jobId', jobsController.applyToJob);
-router.post('/select/:jobId', jobsController.selectSub);
-router.post('/retract/:jobId', jobsController.retractApplication);
-router.post('/status/:id', jobsController.updateJobStatus);
-
-// ✅ Must come LAST to avoid route conflicts
-router.get('/:id', jobsController.getJobById); // /api/jobs/:id
-router.put('/:id', jobsController.editJob);    // /api/jobs/:id
+router.post('/status/:id', JobsController.updateJobStatus);
+router.delete('/delete/:jobId', JobsController.deleteJob);
+router.post('/select', JobsController.selectApplicant);
+router.post('/apply', JobsController.applyToJob);
+router.delete('/apply/:jobId/:userId', JobsController.retractApplication);
 
 module.exports = router;

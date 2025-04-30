@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../hooks/useUser';
-import { getDomJobHistory } from '../utils/api';
+import { useUser } from "../../../hooks/useUser";
+import { getDomJobHistory } from '../../../utils/api';
 
 function DomJobHistory() {
   const { user, isDom, isAuthenticated, isLoading } = useUser();
@@ -25,7 +25,7 @@ function DomJobHistory() {
       try {
         const { jobs: all } = await getDomJobHistory(user._id || user.id);
         const finished = (all || []).filter(job =>
-          job.posterId._id === (user._id || user.id) &&
+          job.posterId === user._id || job.posterId?._id === user._id &&
           ['completed', 'failed'].includes(job.status)
         );
         setJobs(finished);
