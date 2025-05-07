@@ -35,6 +35,7 @@ exports.getApplicationsForJob = async (req, res) => {
  */
 exports.applyToJob = async (req, res) => {
   try {
+    console.log('[POST /api/applications] Request body:', req.body);
     const { jobId, applicantId, coverLetter } = req.body;
 
     const existing = await Application.findOne({ jobId, applicantId });
@@ -42,8 +43,11 @@ exports.applyToJob = async (req, res) => {
       return res.status(400).json({ error: 'Already applied to this job' });
     }
 
-    const newApp = new Application({ jobId, applicantId, coverLetter });
-    await newApp.save();
+    const newApp = new Application({
+      job_id: jobId,
+      applicant_id: applicantId,
+      cover_letter: coverLetter
+    });    await newApp.save();
 
     res.status(201).json({ message: 'Application submitted', application: newApp });
   } catch (error) {
@@ -69,5 +73,41 @@ exports.retractApplication = async (req, res) => {
   } catch (error) {
     console.error('❌ [retractApplication] Error:', error);
     res.status(500).json({ error: 'Failed to retract application' });
+  }
+};
+
+// Get all applications submitted by a specific Sub
+exports.getApplicationsForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const applications = await Application.find({ applicantId: userId })
+      .populate({
+        path: 'jobId',
+        populate: { path: 'posterId', select: 'username role' }
+      });
+
+    res.status(200).json({ applications });
+  } catch (err) {
+    console.error('[getApplicationsForUser] Error:', err);
+    res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+};
+
+/**
+ * GET /api/applications/user/:userId
+ * @desc Fetch all job applications submitted by a specific user
+ */
+exports.getApplicationsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const applications = await Application.find({ applicantId: userId })
+      .populate('jobId')
+      .populate('applicantId', 'username role');
+
+    res.status(200).json({ applications });
+  } catch (error) {
+    console.error('❌ [getApplicationsByUser] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch applications for user' });
   }
 };

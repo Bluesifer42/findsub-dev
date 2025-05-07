@@ -1,13 +1,64 @@
-// File: /src/pages/jobs/JobDetail.jsx
-// Purpose: Display details for a single job, either standalone or embedded in JobsHub.
-// Standards:
-// - Accepts props: jobId, onClose
-// - Centralized API from /utils/api.js
-// - Uses toast, console logging, defensive null checks
-// - Works in both routed or inline-tab view modes
+// ====================================================================
+// 📂 Full File Path & Name: /src/pages/jobs/JobDetail.jsx
+// 📌 Purpose: Display details of a selected job, including feedback and applications.
+// 🧩 File Type: React Page
+// 🔐 Requires Authenticated User: true
+// 🔐 Role Restricted: Any
+// 🔄 Related Backend Files: /routes/JobsRoutes.js, /controllers/JobsController.js, /routes/ApplicationRoutes.js, /controllers/ApplicationController.js
+// 🔁 useEffect Hooks Used: true
+// 🔁 Triggers: jobId change, user load, feedback/apply actions
+// 🔁 Performs: fetch job details, fetch feedback, apply, retract, delete, status updates
+// 🧪 Test Coverage: Unit tests pending, integrated into JobsHub
+// 🌐 Environment-Specific Logic: Logs API data in dev
+// ⚡ Performance Notes: Renders on demand in-tab inside JobsHub
+
+// - DO NOT EDIT THIS SECTION ======================================
+
+// 📦 Data Shape:
+// - Incoming API payloads: camelCase
+// - MongoDB schema fields: snake_case
+// - Internal React state/props/vars: camelCase
+// - Kink references: ObjectId for DB queries; { _id, name, description } for UI display
+//
+// 🎯 Casing Conventions:
+// - MongoDB Collection Fields: snake_case
+// - Mongoose Model Fields: snake_case
+// - API Request/Response Payloads: camelCase
+// - JavaScript Variables & Functions: camelCase
+// - React Components: PascalCase
+// - CSS Classnames (Tailwind/Custom): kebab-case
+//
+// ❗ Error Handling Strategy:
+// - Uses toast for user-visible errors (via react-hot-toast or react-toastify)
+// - Logs errors to console: `[FileName:FunctionName] Error: [message], Payload: [payload]`
+// - Avoids alert()/prompt() except in critical cases with justification
+//
+// 📍 Navigation Standards:
+// - React Router <Link> for internal routing
+// - Direct route changes use navigate('/path')
+//
+// 🧪 Testing/Debugging Aids:
+// - Console logs: `[FileName DEBUG] [message]`
+// - Logs API payloads/responses in development only
+//
+// 🚨 ESLint / Prettier:
+// - Adheres to airbnb style, indentation: 2 spaces (no tabs)
+// - Exceptions: `// eslint-disable-line [rule] - [reason]`
+//
+// 🔒 Security Notes:
+// - Sanitizes inputs via `sanitize-html`
+// - Prevents XSS via Helmet middleware
+//
+// 🧰 Behavior Notes:
+// - Flexible opt-in props (e.g., noPadding, fullWidth). Defaults enforce consistent layout unless explicitly overridden.
+//
+// ♿ Accessibility:
+// - Follows WCAG 2.1; uses ARIA labels for UI components
+//
+// - DO NOT EDIT THIS SECTION ======================================
 
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import FeedbackForm from './JobFeedbackForm';
 import { useUser } from '../../hooks/useUser';
 import {
@@ -35,6 +86,7 @@ function JobDetail({ jobId: propJobId, onClose }) {
   const [hasApplied, setHasApplied] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [status, setStatus] = useState('');
+  const location = useLocation();
 
   // Fetch job details
   useEffect(() => {
@@ -61,7 +113,7 @@ function JobDetail({ jobId: propJobId, onClose }) {
       try {
         const { feedback } = await getFeedbackForJob(jobId);
         const { applications } = await getApplicationsForJob(jobId);
-        const applied = applications.some(app => app.applicantId._id === user._id);
+        const applied = applications.some(app => app.applicant_id._id === user._id);
         console.log('[JobDetail DEBUG] Feedback:', feedback);
         console.log('[JobDetail DEBUG] Applications:', applications);
         console.log('[JobDetail DEBUG] User has applied:', applied);
@@ -165,16 +217,24 @@ function JobDetail({ jobId: propJobId, onClose }) {
   const isPoster = user?._id === job.posterId._id;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 border rounded shadow bg-white">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl font-bold">
-          <Link to={`/job/${job._id}`}>{job.title}</Link>
-        </h2>
-        {onClose && (
-          <button onClick={onClose} className="text-sm text-red-600 hover:underline">✖ Close</button>
+    <>
+      <div className="max-w-5xl mx-auto p-4 border rounded shadow bg-white">      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">{job.title}</h2>
+        {routeJobId && (
+          <button
+            onClick={() => {
+              if (location.key !== 'default') {
+                navigate(-1); // ⬅️ go back to the previous tab/route
+              } else {
+                navigate('/jobs'); // fallback if no history (e.g., direct URL visit)
+              }
+            }}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            ← Back to Listings
+          </button>
         )}
       </div>
-
       <p><strong>Description:</strong> {job.description}</p>
       <p><strong>Location:</strong> {job.location}</p>
       <p><strong>Compensation:</strong> {job.compensation}</p>
@@ -271,7 +331,7 @@ function JobDetail({ jobId: propJobId, onClose }) {
           ) : (
             applications.map(app => (
               <div key={app._id} className="border p-4 mb-4 rounded">
-                <p><strong>Username:</strong> {app.applicantId.username}</p>
+                <p><strong>Username:</strong> {app.applicant_id.username}</p>
                 <p><strong>Experience:</strong> {app.applicantId.experienceLevel}</p>
                 {app.coverLetter && <p><strong>Cover Letter:</strong> {app.coverLetter}</p>}
                 {!job.selectedApplicant && (
@@ -303,8 +363,9 @@ function JobDetail({ jobId: propJobId, onClose }) {
           <button onClick={() => setShowFeedbackForm(false)} className="mt-4">Close Feedback Form</button>
         </div>
       )}
-    </div>
-  );
+      </div>
+      </>
+    );
 }
 
 export default JobDetail;

@@ -13,6 +13,9 @@ const express = require('express');
 const router = express.Router();
 const ApplicationController = require('../controllers/ApplicationController');
 
+// ✅ Get all applications by user (for Subs)
+router.get('/user/:userId', ApplicationController.getApplicationsByUser);
+
 // ✅ Get all applications for a specific job
 router.get('/:jobId', ApplicationController.getApplicationsForJob);
 

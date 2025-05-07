@@ -120,6 +120,11 @@ export const applyToJob = ({ jobId, applicantId, coverLetter }) =>
 export const retractApplication = (jobId, userId) =>
   request('delete', `/applications/${jobId}/${userId}`); // DELETE individual application
 
+export const getApplicationsForUser = async (userId) => {
+  const res = await fetch(`/api/applications/user/${userId}`);
+  if (!res.ok) throw new Error('Failed to fetch applications');
+  return res.json();
+};
 
 // ========================
 // 🗣 Feedback

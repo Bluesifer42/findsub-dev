@@ -1,4 +1,61 @@
-// src/pages/DomJobPost.jsx
+// ====================================================================
+// 📂 Full File Path & Name: src/pages/jobs/dom/DomJobPost.jsx
+// 📌 Purpose: Allows a Dom to create and post a new job with kink requirements
+// 🧩 File Type: React Page
+// 🔐 Requires Authenticated User: true
+// 🔐 Role Restricted: Dom (enforced via useUser hook)
+// 🔄 Related Backend Files: /routes/JobsRoutes.js, /controllers/JobsController.js
+// 🔁 useEffect Hooks Used: true
+// 🔁 Triggers: on mount (auth check), on kink fetch, on form change, on submit
+// 🔁 Performs: fetch kinks, validate auth, submit job post to backend
+// 🧪 Test Coverage: Manual testing only; unit tests pending
+// 🌐 Environment-Specific Logic: None
+// ⚡ Performance Notes: Avoids render-blocking; Select component lazy-loads options
+
+// - DO NOT EDIT THIS SECTION ======================================
+
+// 📦 Data Shape:
+// - Incoming API payloads: camelCase
+// - MongoDB schema fields: snake_case
+// - Internal React state/props/vars: camelCase
+// - Kink references: ObjectId for DB queries; { _id, name, description } for UI display
+//
+// 🎯 Casing Conventions:
+// - MongoDB Collection Fields: snake_case
+// - Mongoose Model Fields: snake_case
+// - API Request/Response Payloads: camelCase
+// - JavaScript Variables & Functions: camelCase
+// - React Components: PascalCase
+// - CSS Classnames (Tailwind/Custom): kebab-case
+//
+// ❗ Error Handling Strategy:
+// - Uses toast for user-visible errors (via react-hot-toast or react-toastify)
+// - Logs errors to console: `[FileName:FunctionName] Error: [message], Payload: [payload]`
+// - Avoids alert()/prompt() except in critical cases with justification
+//
+// 📍 Navigation Standards:
+// - React Router <Link> for internal routing
+// - Direct route changes use navigate('/path')
+//
+// 🧪 Testing/Debugging Aids:
+// - Console logs: `[FileName DEBUG] [message]`
+// - Logs API payloads/responses in development only
+//
+// 🚨 ESLint / Prettier:
+// - Adheres to airbnb style, indentation: 2 spaces (no tabs)
+// - Exceptions: `// eslint-disable-line [rule] - [reason]`
+//
+// 🔒 Security Notes:
+// - Sanitizes inputs via `sanitize-html`
+// - Prevents XSS via Helmet middleware
+//
+// 🧰 Behavior Notes:
+// - Flexible opt-in props (e.g., noPadding, fullWidth). Defaults enforce consistent layout unless explicitly overridden.
+//
+// ♿ Accessibility:
+// - Follows WCAG 2.1; uses ARIA labels for UI components
+//
+// - DO NOT EDIT THIS SECTION ======================================
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +80,7 @@ function DomJobPost() {
     minDuration: '',
     requiredKinks: []
   });
+
   const [kinksOptions, setKinksOptions] = useState([]);
   const [status, setStatus] = useState('');
 
@@ -54,9 +112,9 @@ function DomJobPost() {
         setKinksOptions([]);
       }
     };
-  
+
     fetchKinks();
-  }, []);  
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,7 +135,7 @@ function DomJobPost() {
 
     try {
       const payload = { ...formData, posterId: user._id || user.id };
-      const res = await createJob(payload);
+      await createJob(payload);
       setStatus('✅ Job posted successfully.');
       navigate('/jobs');
     } catch (err) {
@@ -89,7 +147,7 @@ function DomJobPost() {
   if (isLoading || !user) return <p className="text-center mt-4">Loading job form...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
+    <>
       <h2 className="text-xl font-bold mb-4">Post a Job</h2>
       {status && <p className="mb-4">{status}</p>}
 
@@ -126,7 +184,6 @@ function DomJobPost() {
           </label>
         ))}
 
-        {/* Category Dropdown */}
         <label className="block">
           Category:<br />
           <select
@@ -149,7 +206,6 @@ function DomJobPost() {
           </select>
         </label>
 
-        {/* Required Kinks Dropdown */}
         <label className="block">
           Required Kinks for Job:<br />
         </label>
@@ -172,7 +228,7 @@ function DomJobPost() {
           Post Job
         </button>
       </form>
-    </div>
+    </>
   );
 }
 
