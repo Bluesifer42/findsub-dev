@@ -126,7 +126,7 @@ function JobCard({
       className={`
         w-full max-w-md mx-auto
         h-[320px] min-h-[320px] max-h-[320px]
-        box-border border-2 ${debug ? 'border-red-500' : 'border-gray-700'}
+        box-border border-2 'border-gray-700'}
         rounded-xl bg-[#2a3439] text-white shadow-md
         transition-all p-4 mb-6 overflow-hidden cursor-pointer flex flex-col justify-start
       `}
