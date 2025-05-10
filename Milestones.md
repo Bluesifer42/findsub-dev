@@ -132,7 +132,7 @@ This document tracks the current, upcoming, and requested feature enhancements f
 
 ## Phase 1: Coin Foundation
 
-- [x] User `coins` field on backend
+- [ ] User `coins` field on backend
 - [ ] Admin DevTool: Add coins to user
 - [ ] Coins visible on user profile
 - [ ] Coins deducted on auction or contract use
@@ -194,3 +194,108 @@ This document tracks the current, upcoming, and requested feature enhancements f
 - [x] Purge buttons for test cycles
 - [ ] Seed fake feedbacks (Dom/Sub role pairings)
 - [ ] Rebuild trust calculation manually (per user or system-wide)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 👤 User Identity & Role Handling Roadmap
+
+---
+
+### 🧱 Core Account & Profile Structure
+
+- [ ] Define `User` schema (`sharedProfileId`, `linkedAccountId`, `role`, `subscription`)
+- [ ] Define `SharedProfile` schema (displayName, avatar, rolesAvailable, reputation, etc.)
+- [ ] Enable one shared profile across two roles (Dom/Sub)
+- [ ] Support feedback and jobs tagged with `actingAs` role
+- [ ] Enforce max 2 user accounts per shared profile (1 Dom, 1 Sub)
+
+---
+
+### 🛂 Signup & Verification
+
+- [ ] Create role-aware signup flow (Dom or Sub)
+- [ ] Charge £1 onboarding fee for age/ID verification
+- [ ] Auto-create shared profile on signup
+- [ ] Block access to opposite-role signup unless via upgrade
+- [ ] Add email & ID verification flow
+
+---
+
+### 💳 Subscription & Role Upgrades
+
+- [ ] Add `subscription` object to `User` (basePlan, isSwitchUnlocked, billingStatus)
+- [ ] Create `/api/upgrade-role` to link a second role account
+- [ ] Allow Switch upgrade only as paid add-on
+- [ ] Allow optional lifetime Switch unlock (after 3 years or via admin)
+- [ ] Build `hasAccessToRole(role)` middleware for gated access
+- [ ] Enforce locked features based on subscription tier
+
+---
+
+### 🔄 ActingAs Toggle & Context Awareness
+
+- [ ] Track `actingAs` role in session or user context
+- [ ] Conditionally render tabs, sidebars, job actions based on `actingAs`
+- [ ] Prevent cross-role actions (e.g. applying to own job)
+- [ ] Tag all actions (jobs, feedback, messages) with acting role
+
+---
+
+### 🧯 Role Retirement & Suspension
+
+- [ ] Create `/api/remove-role` and `/api/archive-role`
+- [ ] Add `archivedRoles` array to `SharedProfile`
+- [ ] Preserve all historical data (feedback, jobs, gallery)
+- [ ] Lock UI elements or tabs when a role is archived
+- [ ] Add admin tools for force-disable, unlink, or re-enable roles
+
+---
+
+### 🖼️ Profile Interface & UX
+
+- [ ] Build `ProfileOverview.jsx` to show name, avatar, active roles, bio
+- [ ] Add feedback tabs by role (Dom/Sub)
+- [ ] Add Switch toggle in header once unlocked
+- [ ] Show upgrade prompt in profile or subscription tab
+- [ ] Build role retirement/re-activation flow in UI
+- [ ] Display public profile at `/profile/:displayName`
