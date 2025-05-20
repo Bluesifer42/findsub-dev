@@ -1,16 +1,17 @@
 // ====================================================================
 // 📂 Full File Path & Name: /models/Application.js
-// 📌 Purpose: Define schema for job applications submitted by Subs
+// 📌 Purpose: Define schema for job applications submitted by Subs or Switches (acting as Sub)
 // 🧩 File Type: Mongoose Model
 // 🔐 Requires Authenticated User: true
-// 🔐 Role Restricted: Sub (enforced via backend controller)
+// 🔐 Role Restricted: Sub | Switch (enforced via controller validation)
 // 🔄 Related Backend Files: /routes/ApplicationRoutes.js, /controllers/ApplicationController.js
+// 👩‍👦  Is a child component : false
 // 🔁 useEffect Hooks Used: false
-// 🔁 Triggers: N/A (used by controller only)
-// 🔁 Performs: Creates, indexes, and stores application data in MongoDB
-// 🧪 Test Coverage: Validation via Mongoose schema; Integration tested via Postman
-// 🌐 Environment-Specific Logic: Logs on dev only
-// ⚡ Performance Notes: Indexed fields for job_id and applicant_id
+// 🔁 Triggers: Submission via job application form
+// 🔁 Performs: Stores structured application data tied to a job and acting role
+// 🧪 Test Coverage: Integration tested via Postman and frontend apply flow
+// 🌐 Environment-Specific Logic: Dev-mode logging only for request payloads
+// ⚡ Performance Notes: Indexed on `job_id` and `applicant_id` for fast reverse lookups
 
 // - DO NOT EDIT THIS SECTION ======================================
 
@@ -34,9 +35,17 @@
 // - Avoids alert()/prompt() except in critical cases with justification
 //
 // 📍 Navigation Standards:
-// - React Router <Link> for internal routing
-// - Direct route changes use navigate('/path')
-// - Job views: In-tab detail loading in JobsHub via selectedJobId state (mobile uses embedded view)
+// - Use <Link> for static in-app navigation (e.g., navbars, sidebars)
+// - Use navigate('/path') for dynamic redirection (e.g., after logout or submit)
+// - Use <Outlet /> inside wrapper layouts (e.g., JobsHub) to render nested child routes contextually
+//
+// 🧭 Parent/Child Layout Standards:
+// - All child pages must wrap content using <LayoutWrapper><div className="max-w-6xl mx-auto">...</div></LayoutWrapper>
+// - Child pages must not define layout independently; spacing, width, and behavior are inherited from parent.
+// - Use `// 👩‍👦 Is a child component : True/[ParentPageName]` to explicitly document layout hierarchy.
+//
+// 🧱 Responsive & Layout Standards:
+// - All pages except auth use <LayoutWrapper> for consistent page sizing, scroll control, and sidebar injection
 //
 // 🧪 Testing/Debugging Aids:
 // - Console logs: `[FileName DEBUG] [message]`
@@ -47,8 +56,15 @@
 // - Exceptions: `// eslint-disable-line [rule] - [reason]`
 //
 // 🔒 Security Notes:
-// - Sanitizes inputs via `sanitize-html`
+// - Sanitizes user input via sanitize-html (frontend) and express-validator (backend)
 // - Prevents XSS via Helmet middleware
+//
+// 🔁 API Integration:
+// - All calls made via centralized api.js
+// - Raw data returned, transformed only in consuming component
+//
+// 🧰 Behavior Notes:
+// - Flexible opt-in props (e.g., noPadding, fullWidth). Defaults enforce consistent layout unless explicitly overridden.
 //
 // ♿ Accessibility:
 // - Follows WCAG 2.1; uses ARIA labels for UI components
@@ -71,15 +87,18 @@ const applicationSchema = new Schema({
     required: true,
     index: true
   },
+  acting_as: {
+    type: String,
+    enum: ['sub'],
+    required: true,
+    default: 'sub'
+  },
   cover_letter: {
     type: String,
     default: ''
   }
 }, {
-  timestamps: true // auto-adds createdAt and updatedAt
+  timestamps: true
 });
-
-// Remove `created_at` from the schema (now handled by timestamps)
-// Ensure clean and consistent fields: job_id, applicant_id, cover_letter, createdAt, updatedAt
 
 module.exports = mongoose.model('Application', applicationSchema);

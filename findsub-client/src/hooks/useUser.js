@@ -12,13 +12,15 @@
 // 🌐 Environment-Specific Logic: Dev-only logging on load error
 // ⚡ Performance Notes: Extremely lightweight; memoization unnecessary
 
-// - DO NOT EDIT THIS SECTION ======================================
-
+// - DO NOT EDIT OR REMOVE THE SECTION BELOW THIS LINE ======================================
+//
 // 📦 Data Shape:
 // - Incoming API payloads: camelCase
 // - MongoDB schema fields: snake_case
 // - Internal React state/props/vars: camelCase
 // - Kink references: ObjectId for DB queries; { _id, name, description } for UI display
+// - Admins use `adminProfileId` (ref: AdminProfile)
+// - Admins may include `permissions: [String]`, `isOwner: Boolean`, `isProtected: Boolean`
 //
 // 🎯 Casing Conventions:
 // - MongoDB Collection Fields: snake_case
@@ -48,11 +50,13 @@
 // 🔒 Security Notes:
 // - Sanitizes inputs via `sanitize-html`
 // - Prevents XSS via Helmet middleware
+// - Admins cannot be created via public signup
+// - Destructive actions on admin accounts require permission flags or isOwner=true
 //
 // ♿ Accessibility:
 // - Follows WCAG 2.1; uses ARIA labels for UI components
 //
-// - DO NOT EDIT THIS SECTION ======================================
+// - DO NOT EDIT OR REMOVE THE SECTION ABOVE THIS LINE ======================================
 
 import { useEffect, useState } from 'react';
 
@@ -66,9 +70,10 @@ export function useUser() {
       if (stored) {
         const parsed = JSON.parse(stored);
         setUser(parsed);
+        console.log('📦 [UserContext] Loaded user from localStorage:', parsed);
       }
     } catch (err) {
-      console.error('Failed to parse user from localStorage:', err);
+      console.error('[useUser] Failed to parse user from localStorage:', err);
     } finally {
       setIsLoading(false);
     }
@@ -78,10 +83,11 @@ export function useUser() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: !!user?.isAdmin,
+    isAdmin: user?.role === 'Admin',
+    isOwner: !!user?.isOwner,
+    isProtected: !!user?.isProtected,
     isDom: user?.role === 'Dom',
     isSub: user?.role === 'Sub',
     isSwitch: user?.role === 'Switch',
   };
-  
 }

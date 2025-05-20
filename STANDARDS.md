@@ -1,64 +1,27 @@
-
-# FindSub Development Standards
-
-These standards apply to all frontend React pages and components, as well as backend controllers and API logic.
-
-## 📐 Coding Style
-- ✅ Uses camelCase for variables, functions, and filenames.
-- ✅ File naming uses PascalCase for React components, camelCase for others.
-- ✅ Consistent indentation (2 spaces or configured via `.editorconfig`).
-
-## 🌐 React + JSX
-- ✅ Functional components only.
-- ✅ All components should be fully annotated with purpose and logic.
-- ✅ User interactions (errors, feedback, success) use `toast` not `alert`.
-- ✅ Data fetched in `useEffect` with proper error handling.
-- ✅ All states and effects clearly named and scoped.
-
-## 🛠️ Backend + API
-- ✅ All routes return raw data (not `{ data: [...] }` unless explicitly needed).
-- ✅ API should use async/await with proper try/catch blocks.
-- ✅ Controllers are modular and focused on single-responsibility.
-
-## 🧠 Error Handling
-- ✅ All API fetches use `try/catch`, log errors to console and UI via toast.
-- ✅ Console logs must be descriptive (e.g. `[Jobs] Fetch error:`, not just `error:`).
-- ✅ No `alert`, `prompt`, or inline `confirm` in production — use modals or toast.
-
-## 🔍 Defensive Coding
-- ✅ Always use `Array.isArray()` before `.map()` or `.length` access.
-- ✅ Role logic must be scoped (e.g. `user.role === 'Dom'`), not hardcoded in logic branches.
-- ✅ Always validate critical props (`jobId`, `user`, `applications` etc.)
-
-## ✅ UX Consistency
-- ✅ Pages should display meaningful messages on loading, success, and error.
-- ✅ Pages should fail gracefully with fallback messages (e.g. "No jobs found.").
-
----
-
-> Add this `Standards:` section at the top of every major file.
-
 // ====================================================================
 // 📂 Full File Path & Name: [replace with actual path]
 // 📌 Purpose: [Short sentence explaining the file's intent or feature context]
 // 🧩 File Type: React Page | Express Controller | Shared Component | Mongoose Model | Utility | Hook
 // 🔐 Requires Authenticated User: true/false
-// 🔐 Role Restricted: Dom | Sub | Switch | Any (enforced via `restrictToRole` middleware)
+// 🔐 Role Restricted: Dom | Sub | Switch | Admin | Any (enforced via `restrictToRole` middleware)
 // 🔄 Related Backend Files: /routes/[RouteFile].js, /controllers/[ControllerFile].js
+// 👩‍👦  Is a child component : true/false - [Replace with Parent page name]
 // 🔁 useEffect Hooks Used: true/false
 // 🔁 Triggers: [e.g., selectedJobId change, form submission]
 // 🔁 Performs: [e.g., fetch jobs, submit form, apply logic]
 // 🧪 Test Coverage: [e.g., Unit tests in __tests__/FileName.test.js, Integration tests pending]
-// 🌐 Environment-Specific Logic:[e.g., Dev-only logging, Production-only auth checks]
-// ⚡ Performance Notes:[e.g., Memoized with React.memo, Avoids heavy renders]
+// 🌐 Environment-Specific Logic: Uses `process.env.NODE_ENV` to differentiate dev/prod behavior (e.g., logging, mocks, API endpoints)
+// ⚡ Performance Notes: [e.g., Memoized with React.memo, Avoids heavy renders]
 
-// - DO NOT EDIT THIS SECTION ======================================
-
+// - DO NOT EDIT OR REMOVE THE SECTION BELOW THIS LINE ======================================
+//
 // 📦 Data Shape:
 // - Incoming API payloads: camelCase
 // - MongoDB schema fields: snake_case
 // - Internal React state/props/vars: camelCase
 // - Kink references: ObjectId for DB queries; { _id, name, description } for UI display
+// - Admins use `adminProfileId` (ref: AdminProfile)
+// - Admins may include `permissions: [String]`, `isOwner: Boolean`, `isProtected: Boolean`
 //
 // 🎯 Casing Conventions:
 // - MongoDB Collection Fields: snake_case
@@ -74,8 +37,17 @@ These standards apply to all frontend React pages and components, as well as bac
 // - Avoids alert()/prompt() except in critical cases with justification
 //
 // 📍 Navigation Standards:
-// - React Router <Link> for internal routing
-// - Direct route changes use navigate('/path')
+// - Use <Link> for static in-app navigation (e.g., navbars, sidebars)
+// - Use navigate('/path') for dynamic redirection (e.g., after logout or submit)
+// - Use <Outlet /> inside wrapper layouts (e.g., JobsHub) to render nested child routes contextually
+//
+// 🧭 Parent/Child Layout Standards:
+// - All child pages must wrap content using <LayoutWrapper><div className="max-w-6xl mx-auto">...</div></LayoutWrapper>
+// - Child pages must not define layout independently; spacing, width, and behavior are inherited from parent.
+// - Use `// 👩‍👦 Is a child component : True/[ParentPageName]` to explicitly document layout hierarchy.
+//
+// 🧱 Responsive & Layout Standards:
+// - All pages except auth use <LayoutWrapper> for consistent page sizing, scroll control, and sidebar injection
 //
 // 🧪 Testing/Debugging Aids:
 // - Console logs: `[FileName DEBUG] [message]`
@@ -86,10 +58,26 @@ These standards apply to all frontend React pages and components, as well as bac
 // - Exceptions: `// eslint-disable-line [rule] - [reason]`
 //
 // 🔒 Security Notes:
-// - Sanitizes inputs via `sanitize-html`
+// - Sanitizes user input via sanitize-html (frontend) and express-validator (backend)
 // - Prevents XSS via Helmet middleware
+// - Admins cannot be created via public signup
+// - Destructive actions on admin accounts require permission flags or isOwner=true
+//
+// 🔁 API Integration:
+// - All calls made via centralized api.js
+// - Raw data returned, transformed only in consuming component
+// - Admin actions must verify `role === 'Admin'` and proper `permissions[]`
+//
+// 🧰 Behavior Notes:
+// - Flexible opt-in props (e.g., noPadding, fullWidth). Defaults enforce consistent layout unless explicitly overridden.
 //
 // ♿ Accessibility:
 // - Follows WCAG 2.1; uses ARIA labels for UI components
+// - Admin dashboards, tables, and forms must meet same accessibility standards
 //
-// - DO NOT EDIT THIS SECTION ======================================
+// 📘 Helper Output Format:
+// - Returns booleans only (no state mutation)
+// - Intended for use in UI guards, role toggles, and layout gating
+// - Admin checks (e.g. isSuperAdmin, hasPermission) live in /utils/adminCheck.js
+//
+// - DO NOT EDIT OR REMOVE THE SECTION ABOVE THIS LINE ======================================

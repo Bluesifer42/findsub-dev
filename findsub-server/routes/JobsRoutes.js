@@ -77,10 +77,6 @@ const JobsController = require('../controllers/JobsController');
 router.get('/', JobsController.getAllJobs);
 router.post('/', JobsController.createJob);
 
-// ✅ Single Job
-router.get('/:id', JobsController.getJobById);
-router.put('/:id', JobsController.editJob);
-
 // ✅ Poster job list view (for manage listings)
 router.get('/poster', JobsController.getJobsByPoster);
 
@@ -93,14 +89,15 @@ router.get('/awaiting-feedback/:userId', JobsController.getJobsAwaitingFeedback)
 // ✅ Sub accepted jobs (filled and completed)
 router.get('/filled/:userId', JobsController.getFilledJobsForUser);
 
-// ✅ Get applications for a job
-router.get('/applications/:jobId', JobsController.getApplicationsForJob);
-
 // ✅ Actions
 router.post('/status/:id', JobsController.updateJobStatus);
 router.delete('/delete/:jobId', JobsController.deleteJob);
 router.post('/select', JobsController.selectApplicant);
 router.post('/apply', JobsController.applyToJob);
 router.delete('/apply/:jobId/:userId', JobsController.retractApplication);
+
+// ✅ Single Job
+router.get('/:id', JobsController.getJobById);
+router.put('/:id', JobsController.editJob);
 
 module.exports = router;

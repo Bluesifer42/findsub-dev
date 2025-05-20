@@ -63,7 +63,7 @@ function RequireDashboard() {
   if (isLoading) return <p className="text-center mt-4">Loading dashboard...</p>;
   if (!user) return <Navigate to="/login" />;
 
-  if (user.isAdmin) return <Navigate to="/dashboard/admin" />;
+  if (user.role === 'Admin') return <Navigate to="/dashboard/admin" />;
   if (user.role === 'Dom') return <Navigate to="/dashboard/dom" />;
   if (user.role === 'Sub') return <Navigate to="/dashboard/sub" />;
   if (user.role === 'Switch') return <Navigate to="/dashboard/switch" />;

@@ -5,6 +5,7 @@
 // 🔐 Requires Authenticated User: true (for most routes)
 // 🔐 Role Restricted: Dom | Sub | Switch | Any (enforced via `restrictToRole` middleware)
 // 🔄 Related Backend Files: /routes/UserRoutes.js, /routes/JobsRoutes.js
+// 👩‍👦  Is a child component : False
 // 🔁 useEffect Hooks Used: true
 // 🔁 Triggers: route change, user context load
 // 🔁 Performs: dynamic routing, layout selection, auth-protected rendering
@@ -12,8 +13,8 @@
 // 🌐 Environment-Specific Logic: Uses `process.env.NODE_ENV` to differentiate dev/prod behavior
 // ⚡ Performance Notes: Memoized context and layout reuse across route changes
 
-// - DO NOT EDIT THIS SECTION ======================================
-
+// - DO NOT EDIT OR REMOVE THE SECTION BELOW THIS LINE ======================================
+//
 // 📦 Data Shape:
 // - Incoming API payloads: camelCase
 // - MongoDB schema fields: snake_case
@@ -60,13 +61,14 @@
 // ♿ Accessibility:
 // - Follows WCAG 2.1; uses ARIA labels for UI components
 //
-// - DO NOT EDIT THIS SECTION ======================================
+// - DO NOT EDIT OR REMOVE THE SECTION ABOVE THIS LINE ======================================
 
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import { RoleProvider } from './context/RoleContext';
 import { UserProvider } from './context/UserContext';
 import { useAuth } from './context/useAuth';
 
@@ -74,12 +76,11 @@ import LayoutWrapper from './layout/LayoutWrapper';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
 
-// 🔁 Lazy-loaded Pages
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Messages = lazy(() => import('./pages/Messages'));
-const Profile = lazy(() => import('./pages/Profile'));
-const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+const Profile = lazy(() => import("./pages/profile/ProfileOverview"));
+const PublicProfile = lazy(() => import('./pages/Profile/PublicProfile'));
 const UserDirectory = lazy(() => import('./pages/UserDirectory'));
 const JobsHub = lazy(() => import('./pages/features/JobsHub'));
 const PublicJobsBoard = lazy(() => import('./pages/jobs/PublicJobsBoard'));
@@ -94,21 +95,18 @@ const SubJobHistory = lazy(() => import('./pages/jobs/sub/SubJobHistory'));
 const JobDetail = lazy(() => import('./pages/jobs/JobDetail'));
 const FeedbackForm = lazy(() => import('./pages/jobs/JobFeedbackForm'));
 
-// 🔧 Lazy Admin Pages
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const AdminJobs = lazy(() => import('./pages/AdminJobs'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
 const AdminKinks = lazy(() => import('./pages/AdminKinks'));
 const AdminDevTools = lazy(() => import('./pages/AdminDevTools'));
 
-// 🧭 Lazy Dashboards
 const RequireDashboard = lazy(() => import('./dashboards/RequireDashboard'));
 const AdminDashboard = lazy(() => import('./dashboards/admin'));
 const DashboardDom = lazy(() => import('./dashboards/dom'));
 const DashboardSub = lazy(() => import('./dashboards/sub'));
 const DashboardSwitch = lazy(() => import('./dashboards/switch'));
 
-// 🧱 Overlay Sidebars
 import AdminSidebar from './components/AdminSidebar';
 import UserSidebar from './components/UserSidebar';
 
@@ -171,7 +169,7 @@ const AppContent = () => {
 
         {user && (
           <div className="fixed top-0 right-0 h-full z-50">
-            {user.isAdmin ? (
+            {user.role === 'Admin' ? (
               <AdminSidebar />
             ) : (
               <UserSidebar role={user.role} />
@@ -188,7 +186,9 @@ const AppContent = () => {
 function App() {
   return (
     <UserProvider>
-      <AppContent />
+      <RoleProvider>
+        <AppContent />
+      </RoleProvider>
     </UserProvider>
   );
 }

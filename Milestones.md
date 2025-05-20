@@ -130,14 +130,14 @@ This document tracks the current, upcoming, and requested feature enhancements f
 
 # 🪙 Economy Milestones
 
-## Phase 1: Coin Foundation
+## 1: Coin Foundation
 
 - [ ] User `coins` field on backend
 - [ ] Admin DevTool: Add coins to user
 - [ ] Coins visible on user profile
 - [ ] Coins deducted on auction or contract use
 
-## Phase 2: Microtransaction Hooks
+## 2: Microtransaction Hooks
 
 - [ ] Badge gifting requires coins
 - [ ] Feedback unlock boosts trust with coins
@@ -189,113 +189,267 @@ This document tracks the current, upcoming, and requested feature enhancements f
 
 🧪 Dev-Only Tools
 
-- [x] Test user creator
-- [x] Auto application + job links
-- [x] Purge buttons for test cycles
+- [ ] Test user creator
+- [ ] Auto application + job links
+- [ ] Purge buttons for test cycles
 - [ ] Seed fake feedbacks (Dom/Sub role pairings)
 - [ ] Rebuild trust calculation manually (per user or system-wide)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## 👤 User Identity & Role Handling Roadmap
+## 👤 User Identity & Role Handling — Solo Dev Checklist [x]
 
 ---
 
-### 🧱 Core Account & Profile Structure
+### 🧩 BACKEND FIRST — STRUCTURE & API [x]
 
-- [ ] Define `User` schema (`sharedProfileId`, `linkedAccountId`, `role`, `subscription`)
-- [ ] Define `SharedProfile` schema (displayName, avatar, rolesAvailable, reputation, etc.)
-- [ ] Enable one shared profile across two roles (Dom/Sub)
-- [ ] Support feedback and jobs tagged with `actingAs` role
-- [ ] Enforce max 2 user accounts per shared profile (1 Dom, 1 Sub)
+#### 🧱 1. Mongo Schemas & Data Models [x]
+
+- [x] Create `SharedProfile` model:
+  - `displayName`, `avatar`, `bio`, `rolesAvailable`, `reputation`, `gallery`
+- [x] Update `User` model:
+  - Add `role`, `sharedProfileId`, `linkedAccountId`, `subscription`, `status`
+  - Add `devWallet`: `{ balance: Number, isDev: Boolean }`
+- [x] Add `actingAs` field to:
+  - Applications
+  - Feedback
+  - Job posts
+
+#### 🛂 2. Auth & Signup Flow [x]
+
+- [x] Create Dom/Sub role-specific signup routes
+- [x] Create onboarding fee logic (£1 initial payment)
+- [x] Create mock payment processor for dev mode
+- [x] Middleware to charge dev wallet or bypass in non-production
+- [x] Auto-create `SharedProfile` on signup
+- [x] Add `verifyEmail` + ID flow (even basic stub to start)
+- [x] Prevent direct opposite-role signup (require upgrade route)
+
+#### 💳 3. Subscription & Upgrade Logic [x]
+
+- [x] Define `subscription` object in `User`:
+  - `basePlan`, `isSwitchUnlocked`, `billingStatus`, `renewalDate`
+- [x] Build `/api/upgrade-role` endpoint:
+  - Creates linked opposite-role account
+  - Updates `rolesAvailable` in shared profile
+- [x] Charge switch upgrade fee (real or mock)
+- [x] Create middleware `hasAccessToRole(role)` for backend gating
+
+#### 🔶 3(b) — Checklist [x]
+- [x] Add "Voyeur" to User.role enum
+- [x] Add isVoyeurRestricted: true/false logic to hasAccessToRole
+- [x] Create /register/voyeur route
+- - Charges £1 onboarding fee (via chargeDevWallet)
+- - Grants read-only access
+- [x] Update /register/dom, /sub, /switch to skip onboarding fee (full subscription = verified)
+- [x] Add getAvailableRoles() utility for centralized frontend use
+- [x] Allow Voyeurs to upgrade to Dom/Sub/Switch via /upgrade-role
+- [x] Add createTestUser({ role: 'Voyeur' }) to DevTools
+- [x] Verify role-based access enforcement across Jobs, Applications, Feedback
+
+#### 🔄 4. Role Mode & Behavior Tagging [x]
+
+- [x] Middleware to track current `actingAs` (from token/session)
+- [x] Add backend guards to:
+  - Prevent self-application
+  - Prevent feedback to self
+- [x] Update feedback/jobs/apps to store `actingAs` on create
+
+#### 🧯 5. Role Removal & Suspension [x]
+
+- [x] Create `/api/remove-role` to soft-disable Dom/Sub account
+- [x] Update `SharedProfile.rolesAvailable` and `archivedRoles`
+- [x] Ensure soft-deleted roles keep all past activity
+- [x] Add admin flagging or force-lock logic
+- [x] Add toggle in AdminDevTools to simulate downgrade to Voyeur
 
 ---
 
-### 🛂 Signup & Verification
+### 🎨 FRONTEND SECOND — UI & UX [ ]
 
-- [ ] Create role-aware signup flow (Dom or Sub)
-- [ ] Charge £1 onboarding fee for age/ID verification
-- [ ] Auto-create shared profile on signup
-- [ ] Block access to opposite-role signup unless via upgrade
-- [ ] Add email & ID verification flow
+#### 🖼️ 6. Profile Interface [x]
 
----
+- [x] Build `ProfileOverview.jsx` (uses `sharedProfile`)
+  - Shows displayName, avatar, bio, rolesAvailable
+- [x] Show Switch toggle (only if both roles present)
+- [x] Add feedback tabs: "As Dom" / "As Sub"
+- [x] Add upgrade call-to-action (if only one role exists)
+- [x] Add frontend logic to detect role: Voyeur and show upgrade CTA
 
-### 💳 Subscription & Role Upgrades
+#### 💳 7. Subscription Panel [x]
 
-- [ ] Add `subscription` object to `User` (basePlan, isSwitchUnlocked, billingStatus)
-- [ ] Create `/api/upgrade-role` to link a second role account
-- [ ] Allow Switch upgrade only as paid add-on
-- [ ] Allow optional lifetime Switch unlock (after 3 years or via admin)
-- [ ] Build `hasAccessToRole(role)` middleware for gated access
-- [ ] Enforce locked features based on subscription tier
+- [x] Build `SubscriptionSettings.jsx`
+  - Show base plan + upgrade button if Switch not active
+- [x] Build upgrade modal for “Add Opposite Role”
+- [x] Display locked state if plan expired (`billingStatus !== 'active'`)
+- [x] Automatically downgrade lapsed subscribers to Voyeur
+- [x] Show devWallet balance (if in dev)
 
----
+#### 💳 7(b). Transaction Logging & Dev Wallet Flow [x]
+Backend: Models & Routes
+- [x] Create Transaction model
+- - Fields: user_id, type, amount, currency, status, source, note, created_at
+- - Types: upgrade, topup, dev-credit, stripe-charge, admin-adjustment, etc.
+- [x] Create route: GET /api/transactions/user/:id
+- [x] Add POST /api/devtools/top-up-wallet (for dev-only wallet credits)
+- [x] Add transaction creation logic to /upgrade-role controller when using devWallet
+- [x] Store dev-only top-ups as type: dev-credit, status: complete
+- [x] Deduct simulated payments as type: upgrade, source: devWallet, etc.
+- [x] Enforce wallet balance check before upgrade
+- [/] Enrich User.devWallet with an embedded transactionCount or metadata?
+- [x] Build TransactionHistory.jsx (user-only)
+- - Lists past transactions (date, type, amount, status)
+- - Color codes or tags for dev-mode entries
+- [x] Add a [Top Up Dev Wallet] button (only if isDev === true)
+- - Calls /api/devtools/top-up-wallet
+- - Refreshes user state + wallet balance + adds transaction
+- [/] Integrate transaction fetch into SubscriptionSettings.jsx or dashboard
 
-### 🔄 ActingAs Toggle & Context Awareness
+#### 🔄 8. ActingAs Mode Toggle [x]
 
-- [ ] Track `actingAs` role in session or user context
-- [ ] Conditionally render tabs, sidebars, job actions based on `actingAs`
-- [ ] Prevent cross-role actions (e.g. applying to own job)
-- [ ] Tag all actions (jobs, feedback, messages) with acting role
+- [x] Add toggle to header: “Acting as: [Dom ▼]”
+- [x] Store actingAs in global context or hook
+- [x] Conditionally render tabs, job actions, sidebar content
 
----
+#### 🧯 9. Role Retirement (Frontend) [x]
 
-### 🧯 Role Retirement & Suspension
+- [x] Add “Retire This Role” button in settings
+- [z] Confirm and trigger `/remove-role`
+- [z] Update UI to reflect removed role (read-only)
 
-- [ ] Create `/api/remove-role` and `/api/archive-role`
-- [ ] Add `archivedRoles` array to `SharedProfile`
-- [ ] Preserve all historical data (feedback, jobs, gallery)
-- [ ] Lock UI elements or tabs when a role is archived
-- [ ] Add admin tools for force-disable, unlink, or re-enable roles
+#### 🌐 10. Public Profile Display [x]
 
----
+- [x] Create `/profile/:displayName` route
+  - Shows bio, gallery, reputation
+  - Tabs by role (Dom/Sub)
+  - Badges or flags (optional, future)
 
-### 🖼️ Profile Interface & UX
 
-- [ ] Build `ProfileOverview.jsx` to show name, avatar, active roles, bio
-- [ ] Add feedback tabs by role (Dom/Sub)
-- [ ] Add Switch toggle in header once unlocked
-- [ ] Show upgrade prompt in profile or subscription tab
-- [ ] Build role retirement/re-activation flow in UI
-- [ ] Display public profile at `/profile/:displayName`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Admin Integration - [ ]
+Full upgrade and restructuring of Admin accounts, visibility, permissions, and dashboard behavior.
+
+### 1: Admin Role & Schema Foundation - [x]
+- [x] Replace isAdmin: true with role: 'Admin'
+- [x] Add isOwner: true flag to one protected root admin
+- [x] Migrate existing admins to use role: 'Admin'
+- [x] Update login logic to exclude Admins from user-only areas
+
+### 2: Admin Profile Infrastructure - [x]
+- [x] Create AdminProfile model (distinct from SharedProfile)
+- [x] Add adminProfileId ref to User schema
+- [x] Display admin profile to other admins inside AdminDirectory
+
+### 3: Admin Permissions Framework - [x]
+- [x] Add permissions array to AdminProfile
+- [x] Sample permissions: canDeleteUsers, canCreateAdmins, canSuspendContent
+- [x] Use granular permission checks in all sensitive routes/actions
+### 3b: Controller Modularization - [ ]
+- [x] Strip all functions from controller files in to the own help files
+- [ ] Refactor all *Controller.js to match the new help function structure
+
+### 4: Admin Creation & Security - [ ]
+- [ ] Block public-facing creation of Admin accounts
+- [ ] Build secure admin creation form (only by isOwner or canCreateAdmins)
+- [ ] Add placeholder 2FA logic (expandable later)
+- [ ] Ensure unique username/email validation for Admins
+
+### 5: Admin Visibility & User Separation - [ ]
+- [ ] Hide Admins from user-facing content, public profiles, job listings, etc.
+- [ ] Admins cannot apply for jobs or interact with user-side site logic
+- [ ] Rename “Manage Users” → Accounts Management
+- [ ] Add tabs: Users, Admins with filters for each
+
+### 6: Admin Messaging System Prep - [ ]
+- [ ] Allow Admin-to-Admin internal messages
+- [ ] Allow Admin-to-User contact initiation
+- [ ] Block unsolicited User-to-Admin messages (must be in response)
+
+### 7: Admin Dashboard Expansion - [ ]
+- [ ] Build left sidebar (stats, alerts, tools)
+- [ ] Retain sticky Header/Footer, but remove Dom/Sub UI
+- [ ] Display admin profile contact at top left for logged-in admin
+
+### 8: Multi-Owner Delegation - [ ]
+- [ ] Allow isOwner: true to grant tiered permissions to trusted Super Admins
+- [ ] Prevent deletion of isProtected: true Admins
+- [ ] Add audit trail for admin actions like create/delete admin
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Audit Logging & Read-Only Impersonation Framework - [ ]
+Build a full-featured audit trail and impersonation-safe viewer system for long-term transparency, abuse tracking, and admin accountability.
+
+#### 🔐 Core Model & Logging Architecture - [ ]
+- [ ] Create `AuditLog` model with fields:
+  - actorId (ObjectId)
+  - action (String: e.g., "login", "deleteUser", "submitFeedback")
+  - targetId (ObjectId, optional)
+  - route (String: original path accessed)
+  - ipAddress (String)
+  - userAgent (String)
+  - metadata (Mixed: JSON payload with relevant props)
+  - timestamp (auto)
+- [ ] Create helper: `logAuditEvent(req, { action, targetId?, metadata? })`
+- [ ] Call helper from all sensitive backend actions (auth, job delete, forceVoyeur, feedback moderation, etc.)
+
+#### 👤 Per-User Audit Levels - [ ]
+- [ ] Add `auditLevel` to User schema: "basic" | "standard" | "full"
+- [ ] Define tiered logging:
+  - basic → login/logout, top-ups, role switch
+  - standard → job interactions, feedback, edits
+  - full → every API action, UI transition, and tracked click
+- [ ] Add `process.env.AUDIT_LOG_DEFAULT_LEVEL` fallback for site-wide default
+- [ ] Extend `logAuditEvent` to respect audit level tiers before logging
+
+#### 👁️ Read-Only Impersonation System - [ ]
+- [ ] Add admin-only button to "Act As User (Read-Only)"
+- [ ] Store impersonationStart and impersonationStop in AuditLog
+- [ ] All impersonated actions are still read-only (no DB writes)
+- [ ] Admin’s own ID is preserved in all audit logs while impersonating
+- [ ] UI clearly shows “🕵️ Viewing as [username] — Read Only”
+- [ ] Add `req.impersonating` context to all relevant routes
+
+#### 🛠️ Admin UI for Audits - [ ]
+- [ ] Build Admin-only Audit Viewer tab
+- [ ] Filter logs by actor, action, target, route, or date
+- [ ] Group by session or IP for behavioral insight
+- [ ] View raw log (JSON viewer)
+- [ ] Add “Export CSV” feature for reports or audits
+
+#### 🔄 Future Enhancements - [ ]
+- [ ] Optional `useAuditLog()` frontend hook to track UI button clicks or page visits
+- [ ] Enable real-time audit event stream to admin dashboard via WebSocket
+- [ ] Allow `isOwner` to flag certain logs as non-deletable
+- [ ] Add audit export summary to banned user reports
+

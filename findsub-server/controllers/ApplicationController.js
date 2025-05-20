@@ -1,113 +1,82 @@
-// File: /controllers/ApplicationController.js
-// Purpose: Handle all job application logic (fetching, applying, retracting)
-// Standards:
-// - Uses camelCase
-// - Fully annotated
-// - Centralized error tracking
-// - Console logs on file load
-// - RESTful patterns followed
+// ====================================================================
+// 📂 Full File Path & Name: /controllers/ApplicationController.js
+// 📌 Purpose: Handle all job application logic (fetching, applying, retracting)
+// 🧩 File Type: Express Controller
+// 🔐 Requires Authenticated User: true
+// 🔐 Role Restricted: Dom/Sub (validated via middleware)
+// 🔄 Related Backend Files: /routes/ApplicationRoutes.js, /models/Application.js, /models/Job.js
+// 👩‍👦 Is a child component : false
+// 🔁 useEffect Hooks Used: false
+// 🔁 Triggers: POST /api/applications, DELETE /api/apply/:jobId/:userId
+// 🧪 Test Coverage: Manual testing required
+// 🌐 Environment-Specific Logic: None
+// ⚡ Performance Notes:
+// - DO NOT EDIT OR REMOVE THE SECTION BELOW THIS LINE ======================================
+//
+// 📦 Data Shape:
+// - Incoming API payloads: camelCase
+// - MongoDB schema fields: snake_case
+// - Internal React state/props/vars: camelCase
+// - Kink references: ObjectId for DB queries; { _id, name, description } for UI display
+//
+// 🎯 Casing Conventions:
+// - MongoDB Collection Fields: snake_case
+// - Mongoose Model Fields: snake_case
+// - API Request/Response Payloads: camelCase
+// - JavaScript Variables & Functions: camelCase
+// - React Components: PascalCase
+// - CSS Classnames (Tailwind/Custom): kebab-case
+//
+// ❗ Error Handling Strategy:
+// - Uses toast for user-visible errors (via react-hot-toast or react-toastify)
+// - Logs errors to console: `[FileName:FunctionName] Error: [message], Payload: [payload]`
+// - Avoids alert()/prompt() except in critical cases with justification
+//
+// 📍 Navigation Standards:
+// - Use <Link> for static in-app navigation (e.g., navbars, sidebars)
+// - Use navigate('/path') for dynamic redirection (e.g., after logout or submit)
+// - Use <Outlet /> inside wrapper layouts (e.g., JobsHub) to render nested child routes contextually
+//
+// 🧭 Parent/Child Layout Standards:
+// - All child pages must wrap content using <LayoutWrapper><div className="max-w-6xl mx-auto">...</div></LayoutWrapper>
+// - Child pages must not define layout independently; spacing, width, and behavior are inherited from parent.
+// - Use `// 👩‍👦 Is a child component : True/[ParentPageName]` to explicitly document layout hierarchy.
+//
+// 🧱 Responsive & Layout Standards:
+// - All pages except auth use <LayoutWrapper> for consistent page sizing, scroll control, and sidebar injection
+//
+// 🧪 Testing/Debugging Aids:
+// - Console logs: `[FileName DEBUG] [message]`
+// - Logs API payloads/responses in development only
+//
+// 🚨 ESLint / Prettier:
+// - Adheres to airbnb style, indentation: 2 spaces (no tabs)
+// - Exceptions: `// eslint-disable-line [rule] - [reason]`
+//
+// 🔒 Security Notes:
+// - Sanitizes user input via sanitize-html (frontend) and express-validator (backend)
+// - Prevents XSS via Helmet middleware
+//
+// 🔁 API Integration:
+// - All calls made via centralized api.js
+// - Raw data returned, transformed only in consuming component
+//
+// 🧰 Behavior Notes:
+// - Flexible opt-in props (e.g., noPadding, fullWidth). Defaults enforce consistent layout unless explicitly overridden.
+//
+// ♿ Accessibility:
+// - Follows WCAG 2.1; uses ARIA labels for UI components
+//
+// - DO NOT EDIT OR REMOVE THE SECTION ABOVE THIS LINE ======================================
 
 console.log('📦 /controllers/ApplicationController.js mounted');
 
-const Application = require('../models/Application');
+const getApplicationsForJob = require('../utils/applications/getApplicationsForJob');
+const applyToJob = require('../utils/applications/applyToJob');
+const retractApplication = require('../utils/applications/retractApplication');
+const getApplicationsByUser = require('../utils/applications/getApplicationsByUser');
 
-/**
- * GET /api/applications/:jobId
- * @desc Fetch all applications for a specific job
- */
-exports.getApplicationsForJob = async (req, res) => {
-  try {
-    const { jobId } = req.params;
-
-    const applications = await Application.find({ jobId })
-      .populate('applicantId', 'username experienceLevel role kinks');
-
-    res.status(200).json({ applications });
-  } catch (error) {
-    console.error('❌ [getApplicationsForJob] Error:', error);
-    res.status(500).json({ error: 'Failed to fetch job applications' });
-  }
-};
-
-/**
- * POST /api/apply
- * @desc Submit an application to a job
- */
-exports.applyToJob = async (req, res) => {
-  try {
-    console.log('[POST /api/applications] Request body:', req.body);
-    const { jobId, applicantId, coverLetter } = req.body;
-
-    const existing = await Application.findOne({ jobId, applicantId });
-    if (existing) {
-      return res.status(400).json({ error: 'Already applied to this job' });
-    }
-
-    const newApp = new Application({
-      job_id: jobId,
-      applicant_id: applicantId,
-      cover_letter: coverLetter
-    });    await newApp.save();
-
-    res.status(201).json({ message: 'Application submitted', application: newApp });
-  } catch (error) {
-    console.error('❌ [applyToJob] Error:', error);
-    res.status(500).json({ error: 'Failed to apply to job' });
-  }
-};
-
-/**
- * DELETE /api/apply/:jobId/:userId
- * @desc Retract an application from a job
- */
-exports.retractApplication = async (req, res) => {
-  try {
-    const { jobId, userId } = req.params;
-
-    const deleted = await Application.findOneAndDelete({ jobId, applicantId: userId });
-    if (!deleted) {
-      return res.status(404).json({ error: 'Application not found' });
-    }
-
-    res.status(200).json({ message: 'Application retracted' });
-  } catch (error) {
-    console.error('❌ [retractApplication] Error:', error);
-    res.status(500).json({ error: 'Failed to retract application' });
-  }
-};
-
-// Get all applications submitted by a specific Sub
-exports.getApplicationsForUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const applications = await Application.find({ applicantId: userId })
-      .populate({
-        path: 'jobId',
-        populate: { path: 'posterId', select: 'username role' }
-      });
-
-    res.status(200).json({ applications });
-  } catch (err) {
-    console.error('[getApplicationsForUser] Error:', err);
-    res.status(500).json({ error: 'Failed to fetch applications' });
-  }
-};
-
-/**
- * GET /api/applications/user/:userId
- * @desc Fetch all job applications submitted by a specific user
- */
-exports.getApplicationsByUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const applications = await Application.find({ applicantId: userId })
-      .populate('jobId')
-      .populate('applicantId', 'username role');
-
-    res.status(200).json({ applications });
-  } catch (error) {
-    console.error('❌ [getApplicationsByUser] Error:', error);
-    res.status(500).json({ error: 'Failed to fetch applications for user' });
-  }
-};
+exports.getApplicationsForJob = getApplicationsForJob;
+exports.applyToJob = applyToJob;
+exports.retractApplication = retractApplication;
+exports.getApplicationsByUser = getApplicationsByUser;

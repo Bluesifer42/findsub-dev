@@ -112,6 +112,12 @@ function UserSidebar({ role }) {
               {!isCollapsed && <span>Find Members</span>}
             </Link>
           </li>
+          <li>
+            <Link to="/profile/transactions" className="flex items-center space-x-2 hover:underline">
+              <span>💳</span>
+              {!isCollapsed && <span>Transactions</span>}
+            </Link>
+          </li>
         </ul>
       </nav>
     </aside>

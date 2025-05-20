@@ -1,18 +1,19 @@
 // ====================================================================
 // 📂 Full File Path & Name: src/layout/Header.jsx
-// 📌 Purpose: Sticky, theme-aware sitewide header showing user and role info.
+// 📌 Purpose: Sticky header showing role toggle and logout for authenticated users
 // 🧩 File Type: Shared Component
 // 🔐 Requires Authenticated User: true
-// 🔐 Role Restricted: Any
-// 🔄 Related Backend Files: None
+// 🔐 Role Restricted: Dom | Sub | Switch
+// 🔄 Related Backend Files: useActingAs middleware, RoleContext
+// 👩‍👦 Is a child component : False
 // 🔁 useEffect Hooks Used: false
-// 🔁 Triggers: N/A
-// 🔁 Performs: Sticky top bar with dynamic user info from context
-// 🧪 Test Coverage: Manual QA only, pending header context testing
-// 🌐 Environment-Specific Logic: Pulls theme from HTML `data-theme`
-// ⚡ Performance Notes: Stateless component; no re-renders on scroll
+// 🔁 Triggers: actingAs toggle, logout
+// 🔁 Performs: Sets global role context, displays nav and logout
+// 🧪 Test Coverage: Manual QA on switch logic
+// 🌐 Environment-Specific Logic: None
+// ⚡ Performance Notes: Stateless component aside from RoleContext use
 
-// - DO NOT EDIT THIS SECTION ======================================
+// - DO NOT EDIT OR REMOVE THE SECTION BELOW THIS LINE ======================================
 
 // 📦 Data Shape:
 // - Incoming API payloads: camelCase
@@ -38,42 +39,74 @@
 // - Direct route changes use navigate('/path')
 // - Section layouts (e.g., JobsHub) use <Outlet /> to render tab-aware nested views
 //
+// 🧭 Parent/Child Layout Standards:
+// - Top-level layout header; wraps all main routes
+//
+// 🧱 Responsive & Layout Standards:
+// - Sticky, shadowed, horizontal bar
+//
 // 🧪 Testing/Debugging Aids:
-// - Console logs: `[FileName DEBUG] [message]`
-// - Logs API payloads/responses in development only
+// - Console logs for toggle/role change only if needed
 //
 // 🚨 ESLint / Prettier:
-// - Adheres to airbnb style, indentation: 2 spaces (no tabs)
-// - Exceptions: `// eslint-disable-line [rule] - [reason]`
+// - Adheres to airbnb style
 //
 // 🔒 Security Notes:
-// - Sanitizes inputs via `sanitize-html`
-// - Prevents XSS via Helmet middleware
+// - Never exposes token
 //
 // 🔁 API Integration:
-// - All calls made via centralized api.js
-// - Raw data returned, transformed only in consuming component
+// - Sends `x-acting-as` in job/feedback contexts
 //
-// 🧰 Behavior Notes: Flexible opt-in props (e.g., noPadding, fullWidth). Defaults enforce consistent layout unless explicitly overridden.
+// 🧰 Behavior Notes:
+// - All tabs conditionally render based on this role
 //
 // ♿ Accessibility:
-// - Follows WCAG 2.1; uses ARIA labels for UI components
+// - WCAG compliant labels + tab indexes
 //
-// - DO NOT EDIT THIS SECTION ======================================
+// - DO NOT EDIT OR REMOVE THE SECTION ABOVE THIS LINE ======================================
 
 import { useAuth } from '../context/useAuth';
+import { useRole } from '../context/RoleContext';
 
 function Header() {
   const { user, logout } = useAuth();
+  const { actingAs, setActingAs } = useRole();
+
+  const isSwitch = user?.sharedProfile?.roles_available?.length === 2;
+
+  const handleToggle = (e) => {
+    setActingAs(e.target.value);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between">
       <div className="flex items-center space-x-4">
         <h1 className="text-xl font-bold tracking-tight">FindSub</h1>
+
         {user && (
           <span className="text-sm text-gray-600">
-            Logged in as <strong>{user.username}</strong> ({user.role})
+            Logged in as <strong>{user.username}</strong>
           </span>
+        )}
+
+        {isSwitch && (
+          <div className="ml-4">
+            <label htmlFor="actingAs" className="text-sm text-gray-500 mr-2">
+              Acting as:
+            </label>
+            <select
+              id="actingAs"
+              value={actingAs}
+              onChange={handleToggle}
+              className="text-sm border border-gray-300 px-2 py-1 rounded"
+            >
+              {user.sharedProfile.roles_available.map((roleOption) => (
+                <option key={roleOption} value={roleOption}>
+                  {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
       </div>
 

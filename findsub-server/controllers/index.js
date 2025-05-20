@@ -1,29 +1,22 @@
-// ==============================================
-// 📦 File: /controllers/index.js
-// Purpose: Centralized import and export of all controller modules
-// Standards:
-// - CamelCase imports
-// - Console logs on load
-// ==============================================
+// ====================================================================
+// 📂 Full File Path & Name: /controllers/index.js
+// 📌 Purpose: Central export hub for all Express controllers
+// 🧩 File Type: Backend Index Module
+// 🔐 Requires Authenticated User: false
+// 🔐 Role Restricted: Varies per controller/middleware
+// 🔄 Related Backend Files: All /routes/*.js
+// 👩‍👦 Is a child component : false
+// ====================================================================
 
-console.log('📦 /controllers/index.js mounted');
-
-// 🎯 Controller imports
-const jobsController = require('./JobsController');
-const usersController = require('./UsersController');
-const feedbackController = require('./FeedbackController');
-const adminController = require('./AdminController');
-const devToolsController = require('./DevToolsController');
-const authController = require('./AuthController');
-const applicationController = require('./ApplicationController'); // ✅ NEW: Applications controller
-
-// 📤 Export all controllers for easy centralized access
 module.exports = {
-  jobsController,
-  usersController,
-  feedbackController,
-  adminController,
-  devToolsController,
-  authController,
-  applicationController, // ✅
+  AdminController: require('./AdminController'),
+  ApplicationController: require('./ApplicationController'),
+  AuthController: require('./AuthController'),
+  DevToolsController: require('./DevToolsController'),
+  FeedbackController: require('./FeedbackController'),
+  JobsController: require('./JobsController'),
+  KinkController: require('./KinkController'),
+  SubscriptionController: require('./SubscriptionController'),
+  TransactionController: require('./TransactionController'),
+  UsersController: require('./UsersController'),
 };
